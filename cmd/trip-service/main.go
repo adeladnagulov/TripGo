@@ -24,5 +24,6 @@ func main() { //убрать в init()
 	defer db.Close()
 
 	tripRepo := storage.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
-	_ = usecase.NewTripServise(tripRepo)
+	tm := storage.NewTransactionManager(db.Pool)
+	_ = usecase.NewTripServise(tripRepo, tm)
 }

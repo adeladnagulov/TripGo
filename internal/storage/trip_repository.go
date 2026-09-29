@@ -9,6 +9,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -30,9 +31,23 @@ func NewTripRepository(pool *pgxpool.Pool, queryTimeout time.Duration) *tripRepo
 	}
 }
 
+type dbExecutor interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func getDbExecutor(ctx context.Context, pool *pgxpool.Pool) dbExecutor {
+	if tx, ok := ctx.Value(txKey).(pgx.Tx); ok {
+		return tx
+	}
+	return pool
+}
+
 func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
+
+	dbExc := getDbExecutor(queryCtx, r.pool)
 
 	tripBulder := sq.Insert("trips").
 		Columns(
@@ -43,7 +58,7 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 		).
 		Values(
 			trip.ID, trip.UserID, trip.DriverID,
-			trip.StartLatitude, trip.EndLongitude, trip.EndLatitude, trip.EndLongitude,
+			trip.StartLatitude, trip.StartLongitude, trip.EndLatitude, trip.EndLongitude,
 			trip.Price, trip.Status,
 			trip.StartedAt, trip.CreatedAt, trip.UpdatedAt,
 		).
@@ -53,7 +68,7 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.pool.Exec(queryCtx, query, args...)
+	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -67,7 +82,7 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.pool.Exec(queryCtx, query, args...)
+	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -78,6 +93,8 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
+
+	dbExc := getDbExecutor(queryCtx, r.pool)
 
 	tripBulder := sq.Update("trips").
 		Set("status", domain.TripStatusCompleted).
@@ -90,7 +107,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 	if err != nil {
 		return err
 	}
-	result, err := r.pool.Exec(queryCtx, query, args...)
+	result, err := dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -107,7 +124,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 	if err != nil {
 		return err
 	}
-	_, err = r.pool.Exec(queryCtx, query, args...)
+	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -118,6 +135,8 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
+
+	dbExc := getDbExecutor(queryCtx, r.pool)
 
 	tripBulder := sq.Select(
 		"id", "user_id", "driver_id",
@@ -135,7 +154,7 @@ func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tri
 	}
 
 	trip := domain.Trip{}
-	err = r.pool.QueryRow(queryCtx, query, args...).Scan(
+	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
 		&trip.ID,
 		&trip.UserID,
 		&trip.DriverID,

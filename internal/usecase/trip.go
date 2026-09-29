@@ -11,11 +11,13 @@ import (
 
 type TripServise struct {
 	repo storage.TripRepository
+	tm   storage.TxManager
 }
 
-func NewTripServise(repo storage.TripRepository) *TripServise {
+func NewTripServise(repo storage.TripRepository, tm storage.TxManager) *TripServise {
 	return &TripServise{
 		repo: repo,
+		tm:   tm,
 	}
 }
 
@@ -35,14 +37,19 @@ func (s *TripServise) CreateTrip(ctx context.Context, req domain.CreateTripReque
 		UpdatedAt:      time.Now(),
 	}
 
-	if err := s.repo.Create(ctx, &trip); err != nil {
+	err := s.tm.Do(ctx, func(ctx context.Context) error {
+		return s.repo.Create(ctx, &trip)
+	})
+	if err != nil {
 		return nil, err
 	}
 	return &trip, nil
 }
 
 func (s *TripServise) FinishTrip(ctx context.Context, id uuid.UUID) error {
-	err := s.repo.Finish(ctx, id, time.Now())
+	err := s.tm.Do(ctx, func(ctx context.Context) error {
+		return s.repo.Finish(ctx, id, time.Now())
+	})
 	if err != nil {
 		return err
 	}
