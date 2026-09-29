@@ -14,7 +14,7 @@ import (
 
 type TripRepository interface {
 	Create(ctx context.Context, trip *domain.Trip) error
-	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Duration) error
+	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Trip, error)
 }
 
@@ -75,12 +75,12 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 	return nil
 }
 
-func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Duration) error {
+func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
 	tripBulder := sq.Update("trips").
-		Set("status", "completed").
+		Set("status", domain.TripStatusCompleted).
 		Set("finished_at", finishedAt).
 		Set("updated_at", finishedAt).
 		Where(sq.Eq{"id": id}).
@@ -100,7 +100,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 
 	historyBulder := sq.Insert("trip_status_history").
 		Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-		Values(id, "active", "completed", "trip finished", finishedAt).
+		Values(id, domain.TripStatusActive, domain.TripStatusCompleted, "trip finished", finishedAt).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = historyBulder.ToSql()

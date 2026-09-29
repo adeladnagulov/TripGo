@@ -6,9 +6,10 @@ import (
 
 	"github.com/adeladnagulov/TripGo/internal/config"
 	"github.com/adeladnagulov/TripGo/internal/storage"
+	"github.com/adeladnagulov/TripGo/internal/usecase"
 )
 
-func main() {
+func main() { //убрать в init()
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
@@ -21,4 +22,7 @@ func main() {
 		log.Fatalf("Failed to load storage: %v", err)
 	}
 	defer db.Close()
+
+	tripRepo := storage.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
+	_ = usecase.NewTripServise(tripRepo)
 }
