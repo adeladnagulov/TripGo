@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -78,6 +79,10 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 	}
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return domain.ErrConflict
+		}
 		return err
 	}
 
