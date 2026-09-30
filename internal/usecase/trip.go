@@ -21,6 +21,10 @@ func NewTripService(repo storage.TripRepository, tm storage.TxManager) *TripServ
 	}
 }
 
+func (s *TripServise) PingTrip(ctx context.Context) error {
+	return s.repo.Ping(ctx)
+}
+
 func (s *TripServise) CreateTrip(ctx context.Context, req domain.CreateTripRequest) (*domain.Trip, error) {
 	trip := domain.Trip{
 		ID:             uuid.New(),

@@ -13,6 +13,7 @@ func NewRouter(tripServise *usecase.TripServise) http.Handler {
 	h := newHandler(tripServise)
 
 	r.Get("/health", h.Health)
+	r.Get("/ready", h.Ready)
 
 	return r
 }

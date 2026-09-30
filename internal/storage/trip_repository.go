@@ -17,6 +17,7 @@ type TripRepository interface {
 	Create(ctx context.Context, trip *domain.Trip) error
 	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.Trip, error)
+	Ping(ctx context.Context) error
 }
 
 type tripRepository struct {
@@ -41,6 +42,13 @@ func getDbExecutor(ctx context.Context, pool *pgxpool.Pool) dbExecutor {
 		return tx
 	}
 	return pool
+}
+
+func (r *tripRepository) Ping(ctx context.Context) error {
+	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	return r.pool.Ping(queryCtx)
 }
 
 func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
