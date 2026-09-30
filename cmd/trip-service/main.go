@@ -31,8 +31,12 @@ func main() { //убрать в init()
 
 	router := handler.NewRouter(tripService)
 	srv := &http.Server{
-		Addr:    cfg.HttpAddr,
-		Handler: router,
+		Addr:              cfg.HttpAddr,
+		Handler:           router,
+		ReadTimeout:       cfg.HttpReadTimeout,
+		ReadHeaderTimeout: cfg.HttpReadHeaderTimeout,
+		WriteTimeout:      cfg.HttpWriteTimeout,
+		IdleTimeout:       cfg.HttpIdleTimeout,
 	}
 
 	log.Printf("Starting server on %s", srv.Addr)

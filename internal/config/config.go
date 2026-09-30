@@ -8,6 +8,10 @@ import (
 
 type Config struct {
 	HttpAddr                 string        `env:"HTTP_ADDR" envDefault:"8080"`
+	HttpReadTimeout          time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"10s"`
+	HttpReadHeaderTimeout    time.Duration `env:"HTTP_READ_HEADER_TIMEOUT" envDefault:"5s"`
+	HttpWriteTimeout         time.Duration `env:"HTTP_WRITE_TIMEOUT" envDefault:"30s"`
+	HttpIdleTimeout          time.Duration `env:"HTTP_IDLE_TIMEOUT" envDefault:"60s"`
 	LogLevel                 string        `env:"LOG_LEVEL" envDefault:"info"`
 	ShutdownTimeout          time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"10s"`
 	DatabaseUrl              string        `env:"DATABASE_URL,required"`
