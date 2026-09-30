@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 
 	"github.com/adeladnagulov/TripGo/internal/config"
+	"github.com/adeladnagulov/TripGo/internal/handler"
 	"github.com/adeladnagulov/TripGo/internal/storage"
 	"github.com/adeladnagulov/TripGo/internal/usecase"
 )
@@ -25,5 +27,16 @@ func main() { //убрать в init()
 
 	tripRepo := storage.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
 	tm := storage.NewTransactionManager(db.Pool)
-	_ = usecase.NewTripServise(tripRepo, tm)
+	tripService := usecase.NewTripService(tripRepo, tm)
+
+	router := handler.NewRouter(tripService)
+	srv := &http.Server{
+		Addr:    cfg.HttpAddr,
+		Handler: router,
+	}
+
+	log.Printf("Starting server on %s", srv.Addr)
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
 }

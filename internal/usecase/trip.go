@@ -14,7 +14,7 @@ type TripServise struct {
 	tm   storage.TxManager
 }
 
-func NewTripServise(repo storage.TripRepository, tm storage.TxManager) *TripServise {
+func NewTripService(repo storage.TripRepository, tm storage.TxManager) *TripServise {
 	return &TripServise{
 		repo: repo,
 		tm:   tm,
