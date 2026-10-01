@@ -6,129 +6,158 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain"
 	"github.com/adeladnagulov/TripGo/internal/usecase"
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 type Handler struct {
 	tripServise *usecase.TripServise
 }
 
-func newHandler(tripServise *usecase.TripServise) *Handler {
+func NewHandler(tripServise *usecase.TripServise) *Handler {
 	return &Handler{
 		tripServise: tripServise,
 	}
 }
 
-func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status": "ok"}`))
-}
-
-func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
-	if err := h.tripServise.PingTrip(r.Context()); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"status": "error", "reason": "database_unreachable"}`))
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status": "ready"}`))
-}
-
-func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request) {
-	var createTripRequest domain.CreateTripRequest
-	if err := json.NewDecoder(r.Body).Decode(&createTripRequest); err != nil {
-		writeError(w, r, http.StatusBadRequest, "invalid_request", "Invalid request body")
+// CreateTrip Создать поездку
+// (POST /api/v1/trips)
+func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
+	var tripData api.TripData
+	if err := json.NewDecoder(r.Body).Decode(&tripData); err != nil {
+		writeProblem(w, newBadRequest(r.URL.Host, "Invalid request body: "+err.Error()))
 		return
 	}
-	trip, err := h.tripServise.CreateTrip(r.Context(), createTripRequest)
+	trip, err := h.tripServise.CreateTrip(r.Context(), tripData)
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {
-			writeError(w, r, http.StatusConflict, "driver_busy", "driver already has active trip")
+			writeProblem(w, newCreateTripConflict(r.URL.Host, "driver already has active trip"))
 			return
 		}
 		fmt.Println(err) //сделать лог
-		writeError(w, r, http.StatusInternalServerError, "internal_error", "internal error")
+		writeProblem(w, newInternalError(r.URL.Host, "internal error: "+err.Error()))
 		return
 	}
-	tripResp := domain.TripResponse{
-		ID:       trip.ID,
-		UserID:   trip.UserID,
-		DriverID: trip.DriverID,
-		StartPoint: domain.GeoPoint{
-			Latitude:  trip.StartLatitude,
-			Longitude: trip.StartLongitude,
-		},
-		EndPoint: domain.GeoPoint{
-			Latitude:  trip.EndLatitude,
-			Longitude: trip.EndLongitude,
-		},
-		Price:     trip.Price,
-		Status:    trip.Status,
-		StartedAt: trip.CreatedAt,
-	}
-	resourceURL := fmt.Sprintf("/api/v1/trips/%s", tripResp.ID.String())
+
+	resourceURL := fmt.Sprintf("/api/v1/trips/%s", trip.Id.String())
 	w.Header().Set("Location", resourceURL)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(tripResp)
+	writeJson(w, http.StatusCreated, trip)
 }
 
-// 605b1f88-0102-48dc-96bf-fb5490ed9ea2
-func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		writeError(w, r, http.StatusNotFound, "trip_not_found", "trip with an id does not exist")
-		return
-	}
-
-	trip, err := h.tripServise.GetTrip(r.Context(), id)
+// GetTrip Получить поездку
+// (GET /api/v1/trips/{tripId})
+func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
+	trip, err := h.tripServise.GetTrip(r.Context(), tripId)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			writeError(w, r, http.StatusNotFound, "trip_not_found", "trip with an id does not exist")
+			writeProblem(w, newTripNotFound(r.URL.Host, "trip with an id does not exist"))
 			return
 		}
 		fmt.Println(err) //сделать лог
-		writeError(w, r, http.StatusInternalServerError, "internal_error", "internal error")
+		writeProblem(w, newInternalError(r.URL.Host, "internal error: "+err.Error()))
 		return
 	}
 
-	tripResp := domain.TripResponse{
-		ID:       trip.ID,
-		UserID:   trip.UserID,
-		DriverID: trip.DriverID,
-		StartPoint: domain.GeoPoint{
-			Latitude:  trip.StartLatitude,
-			Longitude: trip.StartLongitude,
-		},
-		EndPoint: domain.GeoPoint{
-			Latitude:  trip.EndLatitude,
-			Longitude: trip.EndLongitude,
-		},
-		Price:     trip.Price,
-		Status:    trip.Status,
-		StartedAt: trip.CreatedAt,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tripResp)
+	writeJson(w, http.StatusOK, trip)
 }
 
-func writeError(w http.ResponseWriter, r *http.Request, starus int, code string, detail string) {
-	w.Header().Set("Content-Type", "application/problem+json")
-	w.WriteHeader(starus)
-	problem := domain.Problem{
-		Type:     "about:blank",
-		Title:    http.StatusText(starus),
-		Status:   starus,
-		Detail:   detail,
-		Code:     code,
-		Instance: r.URL.Path,
+// FinishTrip Завершить поездку
+// (POST /api/v1/trips/{tripId}/finish)
+func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {}
+
+// ListTripPositions Получить маршрут поездки
+// (GET /api/v1/trips/{tripId}/positions)
+func (h *Handler) ListTripPositions(w http.ResponseWriter, r *http.Request, tripId api.TripId) {}
+
+// CreateTripPosition Сохранить координату поездки
+// (POST /api/v1/trips/{tripId}/positions)
+func (h *Handler) CreateTripPosition(w http.ResponseWriter, r *http.Request, tripId api.TripId) {}
+
+// Health Liveness
+// (GET /health)
+func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+	resp := api.HealthResponse{
+		Status: api.Ok,
 	}
+	writeJson(w, http.StatusOK, resp)
+}
+
+// Ready Readiness
+// (GET /ready)
+func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
+	if err := h.tripServise.PingTrip(r.Context()); err != nil {
+		writeProblem(w, newInternalError(r.URL.Host, "db not respond :"+err.Error()))
+		return
+	}
+	resp := api.HealthResponse{
+		Status: api.Ok,
+	}
+	writeJson(w, http.StatusOK, resp)
+}
+
+func newBadRequest(host, detail string) api.BadRequest {
+	return api.BadRequest{
+		Type:     "about:blank",
+		Title:    http.StatusText(http.StatusBadRequest),
+		Status:   http.StatusBadRequest,
+		Detail:   &detail,
+		Code:     "invalid_request",
+		Instance: &host,
+	}
+}
+
+func newCreateTripConflict(host, detail string) api.CreateTripConflict {
+	return api.CreateTripConflict{
+		Type:     "about:blank",
+		Title:    http.StatusText(http.StatusConflict),
+		Status:   http.StatusConflict,
+		Detail:   &detail,
+		Code:     "driver_busy",
+		Instance: &host,
+	}
+}
+
+func newInternalError(host, detail string) api.InternalError {
+	return api.InternalError{
+		Type:   "about:blank",
+		Title:  http.StatusText(http.StatusInternalServerError),
+		Status: http.StatusInternalServerError,
+		Detail: &detail,
+		Code:   "internal_error",
+	}
+}
+
+func newTripComplited(host, detail string) api.TripCompleted {
+	return api.BadRequest{
+		Type:     "about:blank",
+		Title:    http.StatusText(http.StatusConflict),
+		Status:   http.StatusConflict,
+		Detail:   &detail,
+		Code:     "trip_completed",
+		Instance: &host,
+	}
+}
+
+func newTripNotFound(host, detail string) api.TripNotFound {
+	return api.BadRequest{
+		Type:     "about:blank",
+		Title:    http.StatusText(http.StatusNotFound),
+		Status:   http.StatusNotFound,
+		Detail:   &detail,
+		Code:     "trip_not_found",
+		Instance: &host,
+	}
+}
+
+func writeJson(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(data)
+}
+
+func writeProblem(w http.ResponseWriter, problem api.Problem) {
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(int(problem.Status))
 	json.NewEncoder(w).Encode(problem)
 }

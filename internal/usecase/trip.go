@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/adeladnagulov/TripGo/internal/domain"
+	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/storage"
 	"github.com/google/uuid"
 )
@@ -25,20 +25,16 @@ func (s *TripServise) PingTrip(ctx context.Context) error {
 	return s.repo.Ping(ctx)
 }
 
-func (s *TripServise) CreateTrip(ctx context.Context, req domain.CreateTripRequest) (*domain.Trip, error) {
-	trip := domain.Trip{
-		ID:             uuid.New(),
-		UserID:         req.UserID,
-		DriverID:       req.DriverID,
-		StartLatitude:  req.StartPoint.Latitude,
-		StartLongitude: req.StartPoint.Longitude,
-		EndLatitude:    req.EndPoint.Latitude,
-		EndLongitude:   req.EndPoint.Longitude,
-		Price:          req.Price,
-		Status:         "active",
-		StartedAt:      time.Now(),
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+func (s *TripServise) CreateTrip(ctx context.Context, data api.TripData) (*api.Trip, error) {
+	trip := api.Trip{
+		Id:         uuid.New(),
+		UserId:     data.UserId,
+		DriverId:   data.DriverId,
+		StartPoint: data.StartPoint,
+		EndPoint:   data.EndPoint,
+		Price:      data.Price,
+		Status:     api.Active,
+		StartedAt:  time.Now(),
 	}
 
 	err := s.tm.Do(ctx, func(ctx context.Context) error {
@@ -60,7 +56,7 @@ func (s *TripServise) FinishTrip(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (s *TripServise) GetTrip(ctx context.Context, id uuid.UUID) (*domain.Trip, error) {
+func (s *TripServise) GetTrip(ctx context.Context, id uuid.UUID) (*api.Trip, error) {
 	trip, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -15,9 +16,9 @@ import (
 )
 
 type TripRepository interface {
-	Create(ctx context.Context, trip *domain.Trip) error
+	Create(ctx context.Context, trip *api.Trip) error
 	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) error
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.Trip, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*api.Trip, error)
 	Ping(ctx context.Context) error
 }
 
@@ -52,7 +53,7 @@ func (r *tripRepository) Ping(ctx context.Context) error {
 	return r.pool.Ping(queryCtx)
 }
 
-func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
+func (r *tripRepository) Create(ctx context.Context, trip *api.Trip) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -66,10 +67,10 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 			"started_at", "created_at", "updated_at",
 		).
 		Values(
-			trip.ID, trip.UserID, trip.DriverID,
-			trip.StartLatitude, trip.StartLongitude, trip.EndLatitude, trip.EndLongitude,
+			trip.Id, trip.UserId, trip.DriverId,
+			trip.StartPoint.Latitude, trip.StartPoint.Longitude, trip.EndPoint.Latitude, trip.EndPoint.Longitude,
 			trip.Price, trip.Status,
-			trip.StartedAt, trip.CreatedAt, trip.UpdatedAt,
+			trip.StartedAt, time.Now(), time.Now(),
 		).
 		PlaceholderFormat(sq.Dollar)
 
@@ -88,7 +89,7 @@ func (r *tripRepository) Create(ctx context.Context, trip *domain.Trip) error {
 
 	historyBulder := sq.Insert("trip_status_history").
 		Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-		Values(trip.ID, nil, trip.Status, "trip created", trip.StartedAt).
+		Values(trip.Id, nil, trip.Status, "trip created", trip.StartedAt).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = historyBulder.ToSql()
@@ -110,7 +111,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 	dbExc := getDbExecutor(queryCtx, r.pool)
 
 	tripBulder := sq.Update("trips").
-		Set("status", domain.TripStatusCompleted).
+		Set("status", api.Completed).
 		Set("finished_at", finishedAt).
 		Set("updated_at", finishedAt).
 		Where(sq.Eq{"id": id}).
@@ -130,7 +131,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 
 	historyBulder := sq.Insert("trip_status_history").
 		Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-		Values(id, domain.TripStatusActive, domain.TripStatusCompleted, "trip finished", finishedAt).
+		Values(id, api.Active, api.Completed, "trip finished", finishedAt).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = historyBulder.ToSql()
@@ -145,7 +146,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 	return nil
 }
 
-func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Trip, error) {
+func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*api.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -155,7 +156,7 @@ func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tri
 		"id", "user_id", "driver_id",
 		"start_latitude", "start_longitude", "end_latitude", "end_longitude",
 		"price", "status",
-		"started_at", "finished_at", "created_at", "updated_at",
+		"started_at", "finished_at",
 	).
 		From("trips").
 		Where(sq.Eq{"id": id}).
@@ -166,21 +167,19 @@ func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tri
 		return nil, err
 	}
 
-	trip := domain.Trip{}
+	trip := api.Trip{}
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
-		&trip.ID,
-		&trip.UserID,
-		&trip.DriverID,
-		&trip.StartLatitude,
-		&trip.StartLongitude,
-		&trip.EndLatitude,
-		&trip.EndLongitude,
+		&trip.Id,
+		&trip.UserId,
+		&trip.DriverId,
+		&trip.StartPoint.Latitude,
+		&trip.StartPoint.Longitude,
+		&trip.EndPoint.Latitude,
+		&trip.EndPoint.Longitude,
 		&trip.Price,
 		&trip.Status,
 		&trip.StartedAt,
 		&trip.FinishedAt,
-		&trip.CreatedAt,
-		&trip.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
