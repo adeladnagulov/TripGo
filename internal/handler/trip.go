@@ -62,7 +62,6 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 	writeJson(w, http.StatusOK, trip)
 }
 
-// 605b1f88-0102-48dc-96bf-fb5490ed9ea2
 // FinishTrip Завершить поездку
 // (POST /api/v1/trips/{tripId}/finish)
 func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
@@ -134,11 +133,12 @@ func newCreateTripConflict(host, detail string) api.CreateTripConflict {
 
 func newInternalError(host, detail string) api.InternalError {
 	return api.InternalError{
-		Type:   "about:blank",
-		Title:  http.StatusText(http.StatusInternalServerError),
-		Status: http.StatusInternalServerError,
-		Detail: &detail,
-		Code:   "internal_error",
+		Type:     "about:blank",
+		Title:    http.StatusText(http.StatusInternalServerError),
+		Status:   http.StatusInternalServerError,
+		Detail:   &detail,
+		Code:     "internal_error",
+		Instance: &host,
 	}
 }
 
