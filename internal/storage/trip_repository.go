@@ -184,7 +184,7 @@ func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Tri
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("не найдена поездка")
+			return nil, domain.ErrNotFound
 		}
 		return nil, err
 	}

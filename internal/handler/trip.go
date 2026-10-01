@@ -8,6 +8,8 @@ import (
 
 	"github.com/adeladnagulov/TripGo/internal/domain"
 	"github.com/adeladnagulov/TripGo/internal/usecase"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -69,8 +71,51 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request) {
 		Status:    trip.Status,
 		StartedAt: trip.CreatedAt,
 	}
+	resourceURL := fmt.Sprintf("/api/v1/trips/%s", tripResp.ID.String())
+	w.Header().Set("Location", resourceURL)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(tripResp)
+}
+
+// 605b1f88-0102-48dc-96bf-fb5490ed9ea2
+func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, r, http.StatusNotFound, "trip_not_found", "trip with an id does not exist")
+		return
+	}
+
+	trip, err := h.tripServise.GetTrip(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			writeError(w, r, http.StatusNotFound, "trip_not_found", "trip with an id does not exist")
+			return
+		}
+		fmt.Println(err) //сделать лог
+		writeError(w, r, http.StatusInternalServerError, "internal_error", "internal error")
+		return
+	}
+
+	tripResp := domain.TripResponse{
+		ID:       trip.ID,
+		UserID:   trip.UserID,
+		DriverID: trip.DriverID,
+		StartPoint: domain.GeoPoint{
+			Latitude:  trip.StartLatitude,
+			Longitude: trip.StartLongitude,
+		},
+		EndPoint: domain.GeoPoint{
+			Latitude:  trip.EndLatitude,
+			Longitude: trip.EndLongitude,
+		},
+		Price:     trip.Price,
+		Status:    trip.Status,
+		StartedAt: trip.CreatedAt,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(tripResp)
 }
 

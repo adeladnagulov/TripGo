@@ -22,7 +22,7 @@ type Trip struct {
 	Price          int64
 	Status         string
 	StartedAt      time.Time
-	FinishedAt     time.Time
+	FinishedAt     *time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

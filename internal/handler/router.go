@@ -17,6 +17,7 @@ func NewRouter(tripServise *usecase.TripServise) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/trips", h.CreateTrip)
+		r.Get("/trips/{id}", h.GetTrip)
 	})
 
 	return r
