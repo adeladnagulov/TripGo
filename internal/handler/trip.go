@@ -62,9 +62,23 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 	writeJson(w, http.StatusOK, trip)
 }
 
+// 605b1f88-0102-48dc-96bf-fb5490ed9ea2
 // FinishTrip Завершить поездку
 // (POST /api/v1/trips/{tripId}/finish)
-func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {}
+func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
+	trip, err := h.tripServise.FinishTrip(r.Context(), tripId)
+	if err != nil {
+		if errors.Is(err, domain.ErrCannotFinishTrip) {
+			writeProblem(w, newTripComplited(r.URL.Host, "trip is already over"))
+			return
+		}
+		fmt.Println(err) //лог
+		writeProblem(w, newInternalError(r.URL.Host, "internal error: "+err.Error()))
+		return
+	}
+
+	writeJson(w, http.StatusOK, trip)
+}
 
 // ListTripPositions Получить маршрут поездки
 // (GET /api/v1/trips/{tripId}/positions)

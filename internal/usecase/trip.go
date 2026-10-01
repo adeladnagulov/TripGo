@@ -46,14 +46,20 @@ func (s *TripServise) CreateTrip(ctx context.Context, data api.TripData) (*api.T
 	return &trip, nil
 }
 
-func (s *TripServise) FinishTrip(ctx context.Context, id uuid.UUID) error {
+func (s *TripServise) FinishTrip(ctx context.Context, id uuid.UUID) (*api.Trip, error) {
+	var finishTrip *api.Trip
 	err := s.tm.Do(ctx, func(ctx context.Context) error {
-		return s.repo.Finish(ctx, id, time.Now())
+		trip, err := s.repo.Finish(ctx, id, time.Now())
+		if err != nil {
+			return err
+		}
+		finishTrip = trip
+		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return finishTrip, nil
 }
 
 func (s *TripServise) GetTrip(ctx context.Context, id uuid.UUID) (*api.Trip, error) {

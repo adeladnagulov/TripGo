@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -17,7 +16,7 @@ import (
 
 type TripRepository interface {
 	Create(ctx context.Context, trip *api.Trip) error
-	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) error
+	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) (*api.Trip, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*api.Trip, error)
 	Ping(ctx context.Context) error
 }
@@ -104,7 +103,7 @@ func (r *tripRepository) Create(ctx context.Context, trip *api.Trip) error {
 	return nil
 }
 
-func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) error {
+func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) (*api.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -115,18 +114,29 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 		Set("finished_at", finishedAt).
 		Set("updated_at", finishedAt).
 		Where(sq.Eq{"id": id}).
-		PlaceholderFormat(sq.Dollar)
+		Where(sq.Eq{"status": api.Active}).
+		PlaceholderFormat(sq.Dollar).
+		Suffix(`RETURNING "id", "user_id", "driver_id",
+			"start_latitude", "start_longitude", "end_latitude", "end_longitude",
+			"price", "status",
+			"started_at", "finished_at", "updated_at"`)
 
 	query, args, err := tripBulder.ToSql()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	result, err := dbExc.Exec(queryCtx, query, args...)
+	var trip api.Trip
+	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
+		&trip.Id, &trip.UserId, &trip.DriverId,
+		&trip.StartPoint.Latitude, &trip.StartPoint.Longitude, &trip.EndPoint.Latitude, &trip.EndPoint.Longitude,
+		&trip.Price, &trip.Status,
+		&trip.StartedAt, &trip.FinishedAt, &trip.LastPositionAt,
+	)
 	if err != nil {
-		return err
-	}
-	if result.RowsAffected() == 0 {
-		return fmt.Errorf("не найдена поездка") //переписать все ошибки
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrCannotFinishTrip
+		}
+		return nil, err
 	}
 
 	historyBulder := sq.Insert("trip_status_history").
@@ -136,14 +146,14 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 
 	query, args, err = historyBulder.ToSql()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &trip, nil
 }
 
 func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*api.Trip, error) {
