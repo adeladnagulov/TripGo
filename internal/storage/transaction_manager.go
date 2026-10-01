@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -25,6 +26,10 @@ func NewTransactionManager(pool *pgxpool.Pool) *TransactionManager {
 }
 
 func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Context) error) (err error) {
+	if _, ok := ctx.Value(txKey).(pgx.Tx); ok {
+		return fn(ctx)
+	}
+
 	tx, err := tm.pool.Begin(ctx)
 	if err != nil {
 		return err
