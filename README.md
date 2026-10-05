@@ -1,44 +1,50 @@
-# TripGo — репозиторий для лабораторных работ
+## Trip Service
 
-Заготовка курса «Разработка микросервисов на Go». Здесь вы делаете все пять
-работ: каждая следующая продолжает предыдущую, переписывать сервис с нуля не
-нужно.
+## Запуск
+# 1.Поднять окружение
+tripgoctl cluster start
+tripgoctl environment start
+tripgoctl connect
+# 2.Применить миграции
+make migrate
+Откат
+make migrate-down 
+# 3.Сгенерировать код из OpenAPI
+make generate
+# 4.Запустить сервис
+make run
 
-## Что делать сразу
+## env переменные
+HTTP_ADDR
+LOG_LEVEL
+SHUTDOWN_TIMEOUT
+DATABASE_URL
+DATABASE_MAX_CONNS
+DATABASE_MIN_CONNS
+DATABASE_MAX_CONN_LIFETIME
+DATABASE_CONNECT_TIMEOUT
+DATABASE_QUERY_TIMEOUT
 
-1. **Fork** этого репозитория к себе. Форк нужен, чтобы преподаватели видели
-   список всех работ курса одной страницей.
-2. Заведите модуль:
+## Решения
+# Уровень изоляции 
+Используется `Read Committed` - дефолтный уровень для PostgreSQL
 
-```bash
-git clone git@github.com:<ваш-логин>/<ваш-репозиторий>.git
-cd <ваш-репозиторий>
-go mod init github.com/<ваш-логин>/<ваш-репозиторий>
-```
+Потому что:
+- Для операций в этой лабе (создание поездки, завершение) достаточно `Read Committed`. Мы не читаем одни и те же строки дважды внутри транзакции.
 
-Путь модуля потом не меняется — иначе придётся править все импорты. Проще всего
-взять адрес своего репозитория, каким бы он ни был.
+# Менеджер транзауций
+Реализован интерфейс
+type TxManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
+}
+Реализован следующим образом:
+- Проверяет, есть ли уже транзакция в контексте. Если есть - просто вызывает переданную функцию, не создавая новую транзакцию, что защищает от вложенных вызовов
+- Если транзакции нет - открывает новую через pool.Begin(ctx)
+- Кладёт pgx.Tx в контекст через context.WithValue
+- Вызывает переданную функцию fn, передавая ей новый контекст
+- В defer проверяет результат: если функция вернула ошибку или была паника - делает Rollback, иначе Commit
 
-Дальше — [`homework/docs/getting-started.md`](https://github.com/course-go-autumn-2026/course/blob/main/homework/docs/getting-started.md)
-в репозитории курса: инструменты, окружение, миграции, вид сданной работы.
+# Запрет двух активных поездок на одного водителя
+Решение на уровне схемы БД - частичный уникальный индекс, он покрывает только строки со статусом active. PostgreSQL сам гарантирует, что вставить вторую активную поездку для того же водителя не получится, даже при параллельных запросах
 
-## Где что лежит
-
-| Что | Где |
-|---|---|
-| Задания, документация, контракты | [`course-go-autumn-2026/course`](https://github.com/course-go-autumn-2026/course) |
-| Слайды и записи лекций | [`lections/`](https://github.com/course-go-autumn-2026/course/tree/main/lections) |
-| Как оценивают, дедлайны, порядок сдачи | [`homework/docs/grading.md`](https://github.com/course-go-autumn-2026/course/blob/main/homework/docs/grading.md) |
-| Локальное окружение и утилита `tripgoctl` | [`course-go-autumn-2026/course-infra`](https://github.com/course-go-autumn-2026/course-infra) |
-
-Задания появляются по мере курса, каждое — после своей пары лекций.
-
-## Как сдавать
-
-Ветка `homework/NN` от `main`, pull request в `main` своего форка, ССЫЛКУ НИКУДА СКИДЫВАТЬ НЕ НУЖНО, ревьюер сам найдет ее внутри вашего форка. Подробно — в `grading.md` репозитория курса.
-
-## Чужие работы
-
-Форки видны всем, включая ваши. Смотреть чужие решения, пока идёт курс, —
-плохая идея: одинаковый код виден сразу, а разбираться на защите придётся
-самому.
+CREATE UNIQUE INDEX trips_driver_active_idx ON trips (driver_id) WHERE status = 'active';
