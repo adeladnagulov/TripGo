@@ -71,8 +71,8 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 		writeProblem(w, newInternalError(r.URL.Path, "internal error: "+err.Error()))
 		return
 	}
-
-	writeJson(w, http.StatusOK, t)
+	resp := create.ToApi(*t)
+	writeJson(w, http.StatusOK, resp)
 }
 
 // FinishTrip Завершить поездку
@@ -88,8 +88,8 @@ func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.
 		writeProblem(w, newInternalError(r.URL.Path, "internal error: "+err.Error()))
 		return
 	}
-
-	writeJson(w, http.StatusOK, t)
+	resp := create.ToApi(*t)
+	writeJson(w, http.StatusOK, resp)
 }
 
 // ListTripPositions Получить маршрут поездки
