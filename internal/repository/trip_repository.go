@@ -7,7 +7,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/adeladnagulov/TripGo/api"
-	"github.com/adeladnagulov/TripGo/internal/domain"
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,9 +15,9 @@ import (
 )
 
 type TripRepository interface {
-	Create(ctx context.Context, trip *api.Trip) error
-	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) (*api.Trip, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*api.Trip, error)
+	Create(ctx context.Context, trip *trip.Trip) error
+	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) (*trip.Trip, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, error)
 	Ping(ctx context.Context) error
 }
 
@@ -52,7 +52,7 @@ func (r *tripRepository) Ping(ctx context.Context) error {
 	return r.pool.Ping(queryCtx)
 }
 
-func (r *tripRepository) Create(ctx context.Context, trip *api.Trip) error {
+func (r *tripRepository) Create(ctx context.Context, t *trip.Trip) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -66,10 +66,10 @@ func (r *tripRepository) Create(ctx context.Context, trip *api.Trip) error {
 			"started_at", "created_at", "updated_at",
 		).
 		Values(
-			trip.Id, trip.UserId, trip.DriverId,
-			trip.StartPoint.Latitude, trip.StartPoint.Longitude, trip.EndPoint.Latitude, trip.EndPoint.Longitude,
-			trip.Price, trip.Status,
-			trip.StartedAt, time.Now(), time.Now(),
+			t.Id, t.UserId, t.DriverId,
+			t.StartPoint.Lat, t.StartPoint.Lon, t.EndPoint.Lat, t.EndPoint.Lon,
+			t.Price, t.Status,
+			t.StartedAt, time.Now(), time.Now(),
 		).
 		PlaceholderFormat(sq.Dollar)
 
@@ -81,14 +81,14 @@ func (r *tripRepository) Create(ctx context.Context, trip *api.Trip) error {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return domain.ErrConflict
+			return trip.ErrConflict
 		}
 		return err
 	}
 
 	historyBulder := sq.Insert("trip_status_history").
 		Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-		Values(trip.Id, nil, trip.Status, "trip created", trip.StartedAt).
+		Values(t.Id, nil, t.Status, "trip created", t.StartedAt).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = historyBulder.ToSql()
@@ -103,7 +103,7 @@ func (r *tripRepository) Create(ctx context.Context, trip *api.Trip) error {
 	return nil
 }
 
-func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) (*api.Trip, error) {
+func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) (*trip.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -125,16 +125,16 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 	if err != nil {
 		return nil, err
 	}
-	var trip api.Trip
+	var t trip.Trip
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
-		&trip.Id, &trip.UserId, &trip.DriverId,
-		&trip.StartPoint.Latitude, &trip.StartPoint.Longitude, &trip.EndPoint.Latitude, &trip.EndPoint.Longitude,
-		&trip.Price, &trip.Status,
-		&trip.StartedAt, &trip.FinishedAt, &trip.LastPositionAt,
+		&t.Id, &t.UserId, &t.DriverId,
+		&t.StartPoint.Lat, &t.StartPoint.Lon, &t.EndPoint.Lat, &t.EndPoint.Lon,
+		&t.Price, &t.Status,
+		&t.StartedAt, &t.FinishedAt, &t.LastPositionAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, domain.ErrCannotFinishTrip
+			return nil, trip.ErrCannotFinishTrip
 		}
 		return nil, err
 	}
@@ -153,10 +153,10 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 		return nil, err
 	}
 
-	return &trip, nil
+	return &t, nil
 }
 
-func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*api.Trip, error) {
+func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -177,26 +177,26 @@ func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*api.Trip, 
 		return nil, err
 	}
 
-	trip := api.Trip{}
+	t := trip.Trip{}
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
-		&trip.Id,
-		&trip.UserId,
-		&trip.DriverId,
-		&trip.StartPoint.Latitude,
-		&trip.StartPoint.Longitude,
-		&trip.EndPoint.Latitude,
-		&trip.EndPoint.Longitude,
-		&trip.Price,
-		&trip.Status,
-		&trip.StartedAt,
-		&trip.FinishedAt,
+		&t.Id,
+		&t.UserId,
+		&t.DriverId,
+		&t.StartPoint.Lat,
+		&t.StartPoint.Lon,
+		&t.EndPoint.Lat,
+		&t.EndPoint.Lon,
+		&t.Price,
+		&t.Status,
+		&t.StartedAt,
+		&t.FinishedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, domain.ErrNotFound
+			return nil, trip.ErrNotFound
 		}
 		return nil, err
 	}
 
-	return &trip, nil
+	return &t, nil
 }

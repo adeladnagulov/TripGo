@@ -10,8 +10,9 @@ import (
 
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/config"
-	"github.com/adeladnagulov/TripGo/internal/handler"
-	"github.com/adeladnagulov/TripGo/internal/storage"
+	handler "github.com/adeladnagulov/TripGo/internal/http"
+	storage "github.com/adeladnagulov/TripGo/internal/repository"
+
 	"github.com/adeladnagulov/TripGo/internal/usecase"
 	"github.com/go-chi/chi/v5"
 )
