@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/adeladnagulov/TripGo/api"
-	"github.com/adeladnagulov/TripGo/internal/storage"
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	storage "github.com/adeladnagulov/TripGo/internal/repository"
 	"github.com/google/uuid"
 )
 
@@ -25,29 +25,29 @@ func (s *TripServise) PingTrip(ctx context.Context) error {
 	return s.repo.Ping(ctx)
 }
 
-func (s *TripServise) CreateTrip(ctx context.Context, data api.TripData) (*api.Trip, error) {
-	trip := api.Trip{
+func (s *TripServise) CreateTrip(ctx context.Context, data trip.TripData) (*trip.Trip, error) {
+	t := trip.Trip{
 		Id:         uuid.New(),
 		UserId:     data.UserId,
 		DriverId:   data.DriverId,
 		StartPoint: data.StartPoint,
 		EndPoint:   data.EndPoint,
 		Price:      data.Price,
-		Status:     api.Active,
+		Status:     trip.Active,
 		StartedAt:  time.Now(),
 	}
 
 	err := s.tm.Do(ctx, func(ctx context.Context) error {
-		return s.repo.Create(ctx, &trip)
+		return s.repo.Create(ctx, &t)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &trip, nil
+	return &t, nil
 }
 
-func (s *TripServise) FinishTrip(ctx context.Context, id uuid.UUID) (*api.Trip, error) {
-	var finishTrip *api.Trip
+func (s *TripServise) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
+	var finishTrip *trip.Trip
 	err := s.tm.Do(ctx, func(ctx context.Context) error {
 		trip, err := s.repo.Finish(ctx, id, time.Now())
 		if err != nil {
@@ -62,7 +62,7 @@ func (s *TripServise) FinishTrip(ctx context.Context, id uuid.UUID) (*api.Trip, 
 	return finishTrip, nil
 }
 
-func (s *TripServise) GetTrip(ctx context.Context, id uuid.UUID) (*api.Trip, error) {
+func (s *TripServise) GetTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
 	trip, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err

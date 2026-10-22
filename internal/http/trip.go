@@ -7,7 +7,8 @@ import (
 	"net/http"
 
 	"github.com/adeladnagulov/TripGo/api"
-	"github.com/adeladnagulov/TripGo/internal/domain"
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	"github.com/adeladnagulov/TripGo/internal/http/trip/create"
 	"github.com/adeladnagulov/TripGo/internal/usecase"
 	"github.com/google/uuid"
 )
@@ -29,19 +30,20 @@ func (h *Handler) HandlerAPIError(w http.ResponseWriter, r *http.Request, err er
 // CreateTrip Создать поездку
 // (POST /api/v1/trips)
 func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
-	var tripData api.TripData
-	if err := json.NewDecoder(r.Body).Decode(&tripData); err != nil {
+	var apiTripData api.TripData
+	if err := json.NewDecoder(r.Body).Decode(&apiTripData); err != nil {
 		writeProblem(w, newBadRequest(r.URL.Path, "Invalid request body: "+err.Error()))
 		return
 	}
+
+	tripData := create.ToDomain(apiTripData)
 	if tripData.DriverId == uuid.Nil {
 		writeProblem(w, newBadRequest(r.URL.Path, "driver_id cannot be a zero UUID"))
 		return
 	}
-
-	trip, err := h.tripServise.CreateTrip(r.Context(), tripData)
+	t, err := h.tripServise.CreateTrip(r.Context(), tripData)
 	if err != nil {
-		if errors.Is(err, domain.ErrConflict) {
+		if errors.Is(err, trip.ErrConflict) {
 			writeProblem(w, newCreateTripConflict(r.URL.Path, "driver already has active trip"))
 			return
 		}
@@ -50,17 +52,18 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.
 		return
 	}
 
-	resourceURL := fmt.Sprintf("/api/v1/trips/%s", trip.Id.String())
+	resourceURL := fmt.Sprintf("/api/v1/trips/%s", t.Id.String())
+	resp := create.ToApi(*t)
 	w.Header().Set("Location", resourceURL)
-	writeJson(w, http.StatusCreated, trip)
+	writeJson(w, http.StatusCreated, resp)
 }
 
 // GetTrip Получить поездку
 // (GET /api/v1/trips/{tripId})
 func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
-	trip, err := h.tripServise.GetTrip(r.Context(), tripId)
+	t, err := h.tripServise.GetTrip(r.Context(), tripId)
 	if err != nil {
-		if errors.Is(err, domain.ErrNotFound) {
+		if errors.Is(err, trip.ErrNotFound) {
 			writeProblem(w, newTripNotFound(r.URL.Path, "trip with an id does not exist"))
 			return
 		}
@@ -69,15 +72,15 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 		return
 	}
 
-	writeJson(w, http.StatusOK, trip)
+	writeJson(w, http.StatusOK, t)
 }
 
 // FinishTrip Завершить поездку
 // (POST /api/v1/trips/{tripId}/finish)
 func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
-	trip, err := h.tripServise.FinishTrip(r.Context(), tripId)
+	t, err := h.tripServise.FinishTrip(r.Context(), tripId)
 	if err != nil {
-		if errors.Is(err, domain.ErrCannotFinishTrip) {
+		if errors.Is(err, trip.ErrCannotFinishTrip) {
 			writeProblem(w, newTripComplited(r.URL.Path, "trip is already over"))
 			return
 		}
@@ -86,7 +89,7 @@ func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.
 		return
 	}
 
-	writeJson(w, http.StatusOK, trip)
+	writeJson(w, http.StatusOK, t)
 }
 
 // ListTripPositions Получить маршрут поездки
