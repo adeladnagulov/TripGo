@@ -1,4 +1,4 @@
-package storage
+package postgres
 
 import (
 	"context"
@@ -40,4 +40,8 @@ func (db *DB) Close() {
 	if db.Pool != nil {
 		db.Pool.Close()
 	}
+}
+
+func (db *DB) PingTrip(ctx context.Context) error {
+	return db.Pool.Ping(ctx)
 }
