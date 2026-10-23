@@ -22,10 +22,10 @@ generate: ## Вся кодогенерация: OpenAPI, mocks, protobuf
 	$(GO) generate ./...
 
 build: ## Собрать исполняемый файл
-	$(GO) build -trimpath -o $(BINARY) ./cmd/trip-service
+	$(GO) build -trimpath -o $(BINARY) ./cmd/service
 
 run: ## Запустить сервис локально
-	$(GO) run ./cmd/trip-service
+	$(GO) run ./cmd/service
 
 migrate: ## Накатить миграции на базу данных
 	$(GO) tool goose -dir migrations postgres "$(DATABASE_URL)" up

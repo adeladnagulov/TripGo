@@ -1,4 +1,4 @@
-package storage
+package trip
 
 import (
 	"context"
@@ -6,28 +6,21 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type TripRepository interface {
-	Create(ctx context.Context, trip *trip.Trip) error
-	Finish(ctx context.Context, id uuid.UUID, FinishedAt time.Time) (*trip.Trip, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, error)
-	Ping(ctx context.Context) error
-}
-
-type tripRepository struct {
+type Repository struct {
 	pool         *pgxpool.Pool
 	queryTimeout time.Duration
 }
 
-func NewTripRepository(pool *pgxpool.Pool, queryTimeout time.Duration) *tripRepository {
-	return &tripRepository{
+func NewTripRepository(pool *pgxpool.Pool, queryTimeout time.Duration) *Repository {
+	return &Repository{
 		pool:         pool,
 		queryTimeout: queryTimeout,
 	}
@@ -39,20 +32,20 @@ type dbExecutor interface {
 }
 
 func getDbExecutor(ctx context.Context, pool *pgxpool.Pool) dbExecutor {
-	if tx, ok := ctx.Value(txKey).(pgx.Tx); ok {
+	if tx, ok := ctx.Value(txManager.TxKey).(pgx.Tx); ok {
 		return tx
 	}
 	return pool
 }
 
-func (r *tripRepository) Ping(ctx context.Context) error {
+func (r *Repository) Ping(ctx context.Context) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
 	return r.pool.Ping(queryCtx)
 }
 
-func (r *tripRepository) Create(ctx context.Context, t *trip.Trip) error {
+func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -81,7 +74,7 @@ func (r *tripRepository) Create(ctx context.Context, t *trip.Trip) error {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return trip.ErrConflict
+			return trip.ErrDriverBusy
 		}
 		return err
 	}
@@ -103,18 +96,18 @@ func (r *tripRepository) Create(ctx context.Context, t *trip.Trip) error {
 	return nil
 }
 
-func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) (*trip.Trip, error) {
+func (r *Repository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) (*trip.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
 
 	tripBulder := sq.Update("trips").
-		Set("status", api.Completed).
+		Set("status", trip.Completed).
 		Set("finished_at", finishedAt).
 		Set("updated_at", finishedAt).
 		Where(sq.Eq{"id": id}).
-		Where(sq.Eq{"status": api.Active}).
+		Where(sq.Eq{"status": trip.Active}).
 		PlaceholderFormat(sq.Dollar).
 		Suffix(`RETURNING "id", "user_id", "driver_id",
 			"start_latitude", "start_longitude", "end_latitude", "end_longitude",
@@ -141,7 +134,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 
 	historyBulder := sq.Insert("trip_status_history").
 		Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-		Values(id, api.Active, api.Completed, "trip finished", finishedAt).
+		Values(id, trip.Active, trip.Completed, "trip finished", finishedAt).
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = historyBulder.ToSql()
@@ -156,7 +149,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 	return &t, nil
 }
 
-func (r *tripRepository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
+func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 

@@ -1,21 +1,11 @@
-package create
+package get
 
 import (
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
-func ToDomain(req api.TripData) trip.TripData { //сделать приватным
-	return trip.TripData{
-		DriverId:   req.DriverId,
-		UserId:     req.UserId,
-		StartPoint: trip.Coordinates{Lat: req.StartPoint.Latitude, Lon: req.StartPoint.Longitude},
-		EndPoint:   trip.Coordinates{Lat: req.EndPoint.Latitude, Lon: req.EndPoint.Longitude},
-		Price:      req.Price,
-	}
-}
-
-func ToApi(t trip.Trip) api.Trip { //сделать приватным
+func toApi(t trip.Trip) api.Trip {
 	return api.Trip{
 		Id:             t.Id,
 		DriverId:       t.DriverId,

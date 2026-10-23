@@ -1,72 +1,22 @@
 package main
 
 import (
-	"context"
 	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/config"
-	handler "github.com/adeladnagulov/TripGo/internal/http"
-	storage "github.com/adeladnagulov/TripGo/internal/repository"
-
-	"github.com/adeladnagulov/TripGo/internal/usecase"
-	"github.com/go-chi/chi/v5"
+	"github.com/adeladnagulov/TripGo/internal/container"
 )
 
-func main() { //убрать в init()
+func main() {
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
-	connectCtx, cancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
-	defer cancel()
 
-	db, err := storage.NewDB(connectCtx, cfg)
+	container, err := container.New(cfg)
 	if err != nil {
-		log.Fatalf("Failed to load storage: %v", err)
-	}
-	defer db.Close()
-
-	tripRepo := storage.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
-	tm := storage.NewTransactionManager(db.Pool)
-	tripService := usecase.NewTripService(tripRepo, tm)
-
-	si := handler.NewHandler(tripService)
-
-	r := chi.NewRouter()
-
-	api.HandlerFromMux(si, r)
-	srv := &http.Server{
-		Addr:              cfg.HttpAddr,
-		Handler:           r,
-		ReadTimeout:       cfg.HttpReadTimeout,
-		ReadHeaderTimeout: cfg.HttpReadHeaderTimeout,
-		WriteTimeout:      cfg.HttpWriteTimeout,
-		IdleTimeout:       cfg.HttpIdleTimeout,
+		log.Fatalf("failed to build container: %v", err)
 	}
 
-	go func() {
-		log.Printf("Starting server on %s", srv.Addr)
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("Server error: %v", err)
-		}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("shutting down gracefully")
-
-	shotdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-	defer cancel()
-
-	if err := srv.Shutdown(shotdownCtx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
-	}
-	log.Println("Server exited gracefully")
+	container.Run()
 }

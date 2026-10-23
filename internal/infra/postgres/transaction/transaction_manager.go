@@ -1,4 +1,4 @@
-package storage
+package txManager
 
 import (
 	"context"
@@ -9,11 +9,7 @@ import (
 
 type contextKey string
 
-const txKey contextKey = "transaction"
-
-type TxManager interface {
-	Do(ctx context.Context, fn func(ctx context.Context) error) error
-}
+const TxKey contextKey = "transaction"
 
 type TransactionManager struct {
 	pool *pgxpool.Pool
@@ -26,7 +22,7 @@ func NewTransactionManager(pool *pgxpool.Pool) *TransactionManager {
 }
 
 func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Context) error) (err error) {
-	if _, ok := ctx.Value(txKey).(pgx.Tx); ok {
+	if _, ok := ctx.Value(TxKey).(pgx.Tx); ok {
 		return fn(ctx)
 	}
 
@@ -46,6 +42,6 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 		}
 	}()
 
-	ctx = context.WithValue(ctx, txKey, tx)
+	ctx = context.WithValue(ctx, TxKey, tx)
 	return fn(ctx)
 }
