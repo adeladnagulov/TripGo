@@ -9,7 +9,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
-func Problem(err error, r *http.Request) (status int, body api.Problem) {
+func Problem(err error, r *http.Request) (int, api.Problem) {
 	if err == nil {
 		return http.StatusOK, api.Problem{}
 	}

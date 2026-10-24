@@ -3,6 +3,7 @@ package trip
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -51,7 +52,7 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
 
-	tripBulder := sq.Insert("trips").
+	tripBuilder := sq.Insert("trips").
 		Columns(
 			"id", "user_id", "driver_id",
 			"start_latitude", "start_longitude", "end_latitude", "end_longitude",
@@ -66,9 +67,9 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 		).
 		PlaceholderFormat(sq.Dollar)
 
-	query, args, err := tripBulder.ToSql()
+	query, args, err := tripBuilder.ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("builde trip query: %w", err)
 	}
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
@@ -76,7 +77,7 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return trip.ErrDriverBusy
 		}
-		return err
+		return fmt.Errorf("failed exec trips: %w", err)
 	}
 
 	historyBulder := sq.Insert("trip_status_history").
@@ -86,11 +87,11 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 
 	query, args, err = historyBulder.ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("builde trip_status_history query: %w", err)
 	}
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed exec trip_status_history: %w", err)
 	}
 
 	return nil
@@ -108,7 +109,7 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 		PlaceholderFormat(sq.Dollar)
 	query, args, err := oldBulder.ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("builde old_trip query: %w", err)
 	}
 	var oldStatus string
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(&oldStatus)
@@ -116,7 +117,7 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 		if err == pgx.ErrNoRows {
 			return trip.ErrNotFound
 		}
-		return err
+		return fmt.Errorf("failed QueryRow old status: %w", err)
 	}
 
 	tripBulder := sq.Update("trips").
@@ -127,11 +128,11 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 		PlaceholderFormat(sq.Dollar)
 	query, args, err = tripBulder.ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("builde trip query: %w", err)
 	}
 	tag, err := dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed exec trips: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return trip.ErrNotFound
@@ -144,11 +145,11 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 
 	query, args, err = historyBulder.ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("builde trip_status_history query: %w", err)
 	}
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed exec trip_status_history: %w", err)
 	}
 
 	return nil
@@ -172,7 +173,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 
 	query, args, err := tripBulder.ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("builde trip query: %w", err)
 	}
 
 	t := trip.Trip{}
@@ -193,7 +194,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 		if err == pgx.ErrNoRows {
 			return nil, trip.ErrNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed QueryRow trip: %w", err)
 	}
 
 	return &t, nil

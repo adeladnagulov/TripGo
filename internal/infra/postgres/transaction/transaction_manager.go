@@ -2,6 +2,7 @@ package txManager
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,7 +29,7 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 
 	tx, err := tm.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("starts a transaction: %w", err)
 	}
 
 	defer func() {
