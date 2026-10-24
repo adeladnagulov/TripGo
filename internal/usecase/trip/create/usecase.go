@@ -2,6 +2,7 @@ package create
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
@@ -36,7 +37,7 @@ func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*tr
 		return s.repo.Create(ctx, &t)
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create trip error: %w", err)
 	}
 	return &t, nil
 }

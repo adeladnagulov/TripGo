@@ -2,6 +2,7 @@ package finish
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
@@ -23,7 +24,7 @@ func NewCreateUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
 func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
 	finishTrip, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get finish trip id=%v error: %w", id, err)
 	}
 
 	err = finishTrip.Finish(time.Now())
@@ -34,7 +35,7 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
 	err = s.tm.Do(ctx, func(ctx context.Context) error {
 		err := s.repo.Save(ctx, finishTrip)
 		if err != nil {
-			return err
+			return fmt.Errorf("save finish trip id=%v error: %w", id, err)
 		}
 		return nil
 	})

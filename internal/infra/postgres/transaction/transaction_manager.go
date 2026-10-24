@@ -35,7 +35,7 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 	beginCancel()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("starts a transaction: %w", err)
 	}
 
 	defer func() {
