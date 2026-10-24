@@ -35,7 +35,7 @@ func Problem(err error, r *http.Request) (status int, body api.Problem) {
 			Code:     "driver_busy",
 			Instance: &host,
 		}
-	case errors.Is(err, trip.ErrCannotFinishTrip):
+	case errors.Is(err, trip.ErrTripCompleted):
 		detail := "trip is already over"
 		return http.StatusConflict, api.BadRequest{
 			Type:     "about:blank",

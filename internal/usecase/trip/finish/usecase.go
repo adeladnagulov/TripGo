@@ -21,13 +21,21 @@ func NewCreateUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
 }
 
 func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
-	var finishTrip *trip.Trip
-	err := s.tm.Do(ctx, func(ctx context.Context) error {
-		trip, err := s.repo.Finish(ctx, id, time.Now())
+	finishTrip, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = finishTrip.Finish(time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.tm.Do(ctx, func(ctx context.Context) error {
+		err := s.repo.Save(ctx, finishTrip)
 		if err != nil {
 			return err
 		}
-		finishTrip = trip
 		return nil
 	})
 	if err != nil {

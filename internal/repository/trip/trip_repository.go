@@ -96,57 +96,62 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 	return nil
 }
 
-func (r *Repository) Finish(ctx context.Context, id uuid.UUID, finishedAt time.Time) (*trip.Trip, error) {
+func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
 
-	tripBulder := sq.Update("trips").
-		Set("status", trip.Completed).
-		Set("finished_at", finishedAt).
-		Set("updated_at", finishedAt).
-		Where(sq.Eq{"id": id}).
-		Where(sq.Eq{"status": trip.Active}).
-		PlaceholderFormat(sq.Dollar).
-		Suffix(`RETURNING "id", "user_id", "driver_id",
-			"start_latitude", "start_longitude", "end_latitude", "end_longitude",
-			"price", "status",
-			"started_at", "finished_at", "updated_at"`)
-
-	query, args, err := tripBulder.ToSql()
+	oldBulder := sq.Select("status").
+		From("trips").
+		Where(sq.Eq{"id": t.Id}).
+		PlaceholderFormat(sq.Dollar)
+	query, args, err := oldBulder.ToSql()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var t trip.Trip
-	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
-		&t.Id, &t.UserId, &t.DriverId,
-		&t.StartPoint.Lat, &t.StartPoint.Lon, &t.EndPoint.Lat, &t.EndPoint.Lon,
-		&t.Price, &t.Status,
-		&t.StartedAt, &t.FinishedAt, &t.LastPositionAt,
-	)
+	var oldStatus string
+	err = dbExc.QueryRow(queryCtx, query, args...).Scan(&oldStatus)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, trip.ErrCannotFinishTrip
+		if err == pgx.ErrNoRows {
+			return trip.ErrNotFound
 		}
-		return nil, err
+		return err
+	}
+
+	tripBulder := sq.Update("trips").
+		Set("status", t.Status).
+		Set("finished_at", t.FinishedAt).
+		Set("updated_at", t.FinishedAt).
+		Where(sq.Eq{"id": t.Id}).
+		PlaceholderFormat(sq.Dollar)
+	query, args, err = tripBulder.ToSql()
+	if err != nil {
+		return err
+	}
+	tag, err := dbExc.Exec(queryCtx, query, args...)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return trip.ErrNotFound
 	}
 
 	historyBulder := sq.Insert("trip_status_history").
 		Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-		Values(id, trip.Active, trip.Completed, "trip finished", finishedAt).
+		Values(t.Id, oldStatus, t.Status, "trip finished", time.Now()). //В будующем, помменять "trip finished" если не только за конца поезди будет
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = historyBulder.ToSql()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &t, nil
+	return nil
 }
 
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {

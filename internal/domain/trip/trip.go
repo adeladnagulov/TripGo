@@ -38,3 +38,12 @@ type TripData struct {
 	StartPoint Coordinates
 	UserId     uuid.UUID
 }
+
+func (t *Trip) Finish(at time.Time) error {
+	if t.Status != Active {
+		return ErrTripCompleted
+	}
+	t.Status = Completed
+	t.FinishedAt = &at
+	return nil
+}
