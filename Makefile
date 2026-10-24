@@ -33,8 +33,13 @@ migrate: ## Накатить миграции на базу данных
 migrate-down: ## Откатить последнюю миграцию
 	$(GO) tool goose -dir migrations postgres "$(DATABASE_URL)" down
 
-test: ## Запустить все тесты с race detector
+test-race: ## Запустить все тесты с race detector
 	$(GO) test -race ./...
+
+test: ## Запустить тесты и сформировать HTML-отчет покрытия
+	$(GO) test -coverprofile=coverage.out ./...
+	$(GO) tool cover -func=coverage.out
+	$(GO) tool cover -html=coverage.out -o coverage.html
 
 lint: ## Запустить линтер
 	$(GO) tool golangci-lint run ./...
