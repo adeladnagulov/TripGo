@@ -93,7 +93,7 @@
 				
 				<option value="file18">github.com/adeladnagulov/TripGo/internal/repository/trip/trip_repository.go (0.0%)</option>
 				
-				<option value="file19">github.com/adeladnagulov/TripGo/internal/usecase/trip/create/usecase.go (0.0%)</option>
+				<option value="file19">github.com/adeladnagulov/TripGo/internal/usecase/trip/create/usecase.go (100.0%)</option>
 				
 				<option value="file20">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (0.0%)</option>
 				
@@ -1654,14 +1654,14 @@ type CreateUseCase struct {
 }
 
 func NewCreateUseCase(repo tripCreator, tm txManager) *CreateUseCase {
-        <span class="cov0" title="0">return &amp;CreateUseCase{
+        <span class="cov8" title="1">return &amp;CreateUseCase{
                 repo: repo,
                 tm:   tm,
 </span>        }
 }
 
 func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*trip.Trip, error) {
-        <span class="cov0" title="0">t := trip.Trip{
+        <span class="cov8" title="1">t := trip.Trip{
                 Id:         uuid.New(),
                 UserId:     data.UserId,
                 DriverId:   data.DriverId,
@@ -1672,13 +1672,13 @@ func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*tr
                 StartedAt:  time.Now(),
 </span>        }
 
-        <span class="cov0" title="0">err := s.tm.Do(ctx, func(ctx context.Context) error </span>{
-                <span class="cov0" title="0">return s.repo.Create(ctx, &amp;t)
+        <span class="cov8" title="1">err := s.tm.Do(ctx, func(ctx context.Context) error </span>{
+                <span class="cov8" title="1">return s.repo.Create(ctx, &amp;t)
 </span>        })
-        <span class="cov0" title="0">if err != nil </span>{
-                <span class="cov0" title="0">return nil, fmt.Errorf("create trip error: %w", err)
+        <span class="cov8" title="1">if err != nil </span>{
+                <span class="cov8" title="1">return nil, fmt.Errorf("create trip error: %w", err)
 </span>        }
-        <span class="cov0" title="0">return &amp;t, nil</span>
+        <span class="cov8" title="1">return &amp;t, nil</span>
 }
 </pre>
 		
