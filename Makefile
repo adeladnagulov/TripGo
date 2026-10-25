@@ -41,6 +41,9 @@ test: ## Запустить тесты и сформировать HTML-отче
 	$(GO) tool cover -func=coverage.out
 	$(GO) tool cover -html=coverage.out -o coverage.html
 
+test-integration:
+	$(GO) test -tags=integration -race ./...
+
 lint: ## Запустить линтер
 	$(GO) tool golangci-lint run ./...
 
