@@ -95,7 +95,7 @@
 				
 				<option value="file19">github.com/adeladnagulov/TripGo/internal/usecase/trip/create/usecase.go (100.0%)</option>
 				
-				<option value="file20">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (0.0%)</option>
+				<option value="file20">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (100.0%)</option>
 				
 				<option value="file21">github.com/adeladnagulov/TripGo/internal/usecase/trip/get/usecase.go (0.0%)</option>
 				
@@ -785,7 +785,7 @@ func New(cfg *config.Config) (*Container, error) {
         tm := txManager.NewTransactionManager(db.Pool)
 </span>
         <span class="cov0" title="0">createUc := createUsecase.NewCreateUseCase(tripRepo, tm)
-        finishUc := finishUsecase.NewCreateUseCase(tripRepo, tm)
+        finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm)
         getUc := getUsecase.NewCreateUseCase(tripRepo)
 </span>
         <span class="cov0" title="0">createH := create.NewHandler(createUc)
@@ -1698,35 +1698,35 @@ type FinishUseCase struct {
         tm   txManager
 }
 
-func NewCreateUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
-        <span class="cov0" title="0">return &amp;FinishUseCase{
+func NewFinishUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
+        <span class="cov8" title="1">return &amp;FinishUseCase{
                 repo: repo,
                 tm:   tm,
 </span>        }
 }
 
 func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
-        <span class="cov0" title="0">finishTrip, err := s.repo.GetByID(ctx, id)
+        <span class="cov8" title="1">finishTrip, err := s.repo.GetByID(ctx, id)
         if err != nil </span>{
-                <span class="cov0" title="0">return nil, fmt.Errorf("get finish trip id=%v error: %w", id, err)
+                <span class="cov8" title="1">return nil, fmt.Errorf("get finish trip id=%v error: %w", id, err)
 </span>        }
 
-        <span class="cov0" title="0">err = finishTrip.Finish(time.Now())
+        <span class="cov8" title="1">err = finishTrip.Finish(time.Now())
         if err != nil </span>{
-                <span class="cov0" title="0">return nil, err
+                <span class="cov8" title="1">return nil, err
 </span>        }
 
-        <span class="cov0" title="0">err = s.tm.Do(ctx, func(ctx context.Context) error </span>{
-                <span class="cov0" title="0">err := s.repo.Save(ctx, finishTrip)
+        <span class="cov8" title="1">err = s.tm.Do(ctx, func(ctx context.Context) error </span>{
+                <span class="cov8" title="1">err := s.repo.Save(ctx, finishTrip)
                 if err != nil </span>{
-                        <span class="cov0" title="0">return fmt.Errorf("save finish trip id=%v error: %w", id, err)
+                        <span class="cov8" title="1">return fmt.Errorf("save finish trip id=%v error: %w", id, err)
 </span>                }
-                <span class="cov0" title="0">return nil</span>
+                <span class="cov8" title="1">return nil</span>
         })
-        <span class="cov0" title="0">if err != nil </span>{
-                <span class="cov0" title="0">return nil, err
+        <span class="cov8" title="1">if err != nil </span>{
+                <span class="cov8" title="1">return nil, err
 </span>        }
-        <span class="cov0" title="0">return finishTrip, nil</span>
+        <span class="cov8" title="1">return finishTrip, nil</span>
 }
 </pre>
 		

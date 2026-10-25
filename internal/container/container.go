@@ -47,7 +47,7 @@ func New(cfg *config.Config) (*Container, error) {
 	tm := txManager.NewTransactionManager(db.Pool, cfg.DatabaseQueryTimeout)
 
 	createUc := createUsecase.NewCreateUseCase(tripRepo, tm)
-	finishUc := finishUsecase.NewCreateUseCase(tripRepo, tm)
+	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm)
 	getUc := getUsecase.NewCreateUseCase(tripRepo)
 
 	createH := create.NewHandler(createUc)

@@ -14,7 +14,7 @@ type FinishUseCase struct {
 	tm   txManager
 }
 
-func NewCreateUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
+func NewFinishUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
 	return &FinishUseCase{
 		repo: repo,
 		tm:   tm,
