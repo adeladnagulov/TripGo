@@ -83,9 +83,9 @@
 				
 				<option value="file13">github.com/adeladnagulov/TripGo/internal/http/trip/finish/handler.go (100.0%)</option>
 				
-				<option value="file14">github.com/adeladnagulov/TripGo/internal/http/trip/get/convert.go (0.0%)</option>
+				<option value="file14">github.com/adeladnagulov/TripGo/internal/http/trip/get/convert.go (100.0%)</option>
 				
-				<option value="file15">github.com/adeladnagulov/TripGo/internal/http/trip/get/handler.go (0.0%)</option>
+				<option value="file15">github.com/adeladnagulov/TripGo/internal/http/trip/get/handler.go (100.0%)</option>
 				
 				<option value="file16">github.com/adeladnagulov/TripGo/internal/infra/postgres/postgres.go (0.0%)</option>
 				
@@ -1274,7 +1274,7 @@ import (
 )
 
 func toApi(t trip.Trip) api.Trip {
-        <span class="cov0" title="0">return api.Trip{
+        <span class="cov8" title="1">return api.Trip{
                 Id:             t.Id,
                 DriverId:       t.DriverId,
                 UserId:         t.UserId,
@@ -1300,33 +1300,32 @@ import (
         "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/adeladnagulov/TripGo/internal/http/domainerror"
         "github.com/adeladnagulov/TripGo/internal/http/response"
-        "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
 )
 
 type Handler struct {
-        uc *get.GetUseCase
+        uc tripUseCase
 }
 
-func NewHandler(uc *get.GetUseCase) *Handler {
-        <span class="cov0" title="0">return &amp;Handler{uc: uc}
+func NewHandler(uc tripUseCase) *Handler {
+        <span class="cov8" title="1">return &amp;Handler{uc: uc}
 </span>}
 
 // GetTrip Получить поездку
 // (GET /api/v1/trips/{tripId})
 func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
-        <span class="cov0" title="0">t, err := h.uc.GetTrip(r.Context(), tripId)
+        <span class="cov8" title="1">t, err := h.uc.GetTrip(r.Context(), tripId)
         if err != nil </span>{
-                <span class="cov0" title="0">if errors.Is(err, trip.ErrNotFound) </span>{
-                        <span class="cov0" title="0">status, problem := domainerror.Problem(err, r)
+                <span class="cov8" title="1">if errors.Is(err, trip.ErrNotFound) </span>{
+                        <span class="cov8" title="1">status, problem := domainerror.Problem(err, r)
                         response.Problem(w, status, problem)
                         return
 </span>                }
-                <span class="cov0" title="0">fmt.Println(err) //сделать лог
+                <span class="cov8" title="1">fmt.Println(err) //сделать лог
                 status, problem := domainerror.Problem(err, r)
                 response.Problem(w, status, problem)
                 return</span>
         }
-        <span class="cov0" title="0">resp := toApi(*t)
+        <span class="cov8" title="1">resp := toApi(*t)
         response.Json(w, http.StatusOK, resp)</span>
 }
 </pre>
