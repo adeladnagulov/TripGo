@@ -97,7 +97,7 @@
 				
 				<option value="file20">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (100.0%)</option>
 				
-				<option value="file21">github.com/adeladnagulov/TripGo/internal/usecase/trip/get/usecase.go (0.0%)</option>
+				<option value="file21">github.com/adeladnagulov/TripGo/internal/usecase/trip/get/usecase.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -1745,17 +1745,17 @@ type GetUseCase struct {
 }
 
 func NewCreateUseCase(repo tripGetter) *GetUseCase {
-        <span class="cov0" title="0">return &amp;GetUseCase{
+        <span class="cov8" title="1">return &amp;GetUseCase{
                 repo: repo,
 </span>        }
 }
 
 func (s *GetUseCase) GetTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
-        <span class="cov0" title="0">trip, err := s.repo.GetByID(ctx, id)
+        <span class="cov8" title="1">trip, err := s.repo.GetByID(ctx, id)
         if err != nil </span>{
-                <span class="cov0" title="0">return nil, fmt.Errorf("get trip id=%v error: %w", id, err)
+                <span class="cov8" title="1">return nil, fmt.Errorf("get trip id=%v error: %w", id, err)
 </span>        }
-        <span class="cov0" title="0">return trip, nil</span>
+        <span class="cov8" title="1">return trip, nil</span>
 }
 </pre>
 		
