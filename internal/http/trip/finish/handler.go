@@ -9,14 +9,13 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/domainerror"
 	"github.com/adeladnagulov/TripGo/internal/http/response"
-	"github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 )
 
 type Handler struct {
-	uc *finish.FinishUseCase
+	uc tripUseCase
 }
 
-func NewHandler(us *finish.FinishUseCase) *Handler {
+func NewHandler(us tripUseCase) *Handler {
 	return &Handler{uc: us}
 }
 
