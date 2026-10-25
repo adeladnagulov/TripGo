@@ -65,7 +65,7 @@
 				
 				<option value="file4">github.com/adeladnagulov/TripGo/internal/domain/trip/trip.go (100.0%)</option>
 				
-				<option value="file5">github.com/adeladnagulov/TripGo/internal/http/domainerror/mapper.go (0.0%)</option>
+				<option value="file5">github.com/adeladnagulov/TripGo/internal/http/domainerror/mapper.go (100.0%)</option>
 				
 				<option value="file6">github.com/adeladnagulov/TripGo/internal/http/health/handler.go (0.0%)</option>
 				
@@ -897,13 +897,13 @@ import (
 )
 
 func Problem(err error, r *http.Request) (int, api.Problem) {
-        <span class="cov0" title="0">if err == nil </span>{
-                <span class="cov0" title="0">return http.StatusOK, api.Problem{}
+        <span class="cov8" title="1">if err == nil </span>{
+                <span class="cov8" title="1">return http.StatusOK, api.Problem{}
 </span>        }
-        <span class="cov0" title="0">host := r.URL.Host
+        <span class="cov8" title="1">host := r.URL.Host
         switch </span>{
         case isValidationError(err):
-                <span class="cov0" title="0">detail := "invalid request body or parameters"
+                <span class="cov8" title="1">detail := "invalid request body or parameters"
                 return http.StatusBadRequest, api.BadRequest{
                         Type:     "about:blank",
                         Title:    http.StatusText(http.StatusBadRequest),
@@ -913,7 +913,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
                         Instance: &amp;host,
 </span>                }
         case errors.Is(err, trip.ErrDriverBusy):
-                <span class="cov0" title="0">detail := "driver already has active trip"
+                <span class="cov8" title="1">detail := "driver already has active trip"
                 return http.StatusConflict, api.CreateTripConflict{
                         Type:     "about:blank",
                         Title:    http.StatusText(http.StatusConflict),
@@ -923,7 +923,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
                         Instance: &amp;host,
 </span>                }
         case errors.Is(err, trip.ErrTripCompleted):
-                <span class="cov0" title="0">detail := "trip is already over"
+                <span class="cov8" title="1">detail := "trip is already over"
                 return http.StatusConflict, api.BadRequest{
                         Type:     "about:blank",
                         Title:    http.StatusText(http.StatusConflict),
@@ -933,7 +933,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
                         Instance: &amp;host,
 </span>                }
         case errors.Is(err, trip.ErrNotFound):
-                <span class="cov0" title="0">detail := "trip with an id does not exist"
+                <span class="cov8" title="1">detail := "trip with an id does not exist"
                 return http.StatusNotFound, api.BadRequest{
                         Type:     "about:blank",
                         Title:    http.StatusText(http.StatusNotFound),
@@ -944,7 +944,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 </span>                }
         }
 
-        <span class="cov0" title="0">detail := "internal server error"
+        <span class="cov8" title="1">detail := "internal server error"
         return http.StatusInternalServerError, api.InternalError{
                 Type:     "about:blank",
                 Title:    http.StatusText(http.StatusInternalServerError),
@@ -956,12 +956,12 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 }
 
 func isValidationError(err error) bool {
-        <span class="cov0" title="0">var syntaxErr *json.SyntaxError
+        <span class="cov8" title="1">var syntaxErr *json.SyntaxError
         var unmarshalErr *json.UnmarshalTypeError
         if errors.As(err, &amp;syntaxErr) || errors.As(err, &amp;unmarshalErr) </span>{
-                <span class="cov0" title="0">return true
+                <span class="cov8" title="1">return true
 </span>        }
-        <span class="cov0" title="0">return false</span>
+        <span class="cov8" title="1">return false</span>
 }
 </pre>
 		
