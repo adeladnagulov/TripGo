@@ -10,15 +10,14 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/domainerror"
 	"github.com/adeladnagulov/TripGo/internal/http/response"
-	"github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 )
 
 type Handler struct {
-	uc *create.CreateUseCase
+	uc tripUseCase
 }
 
-func NewHandler(us *create.CreateUseCase) *Handler {
-	return &Handler{uc: us}
+func NewHandler(uc tripUseCase) *Handler {
+	return &Handler{uc: uc}
 }
 
 // CreateTrip Создать поездку
@@ -38,7 +37,6 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.
 			response.Problem(w, status, problem)
 			return
 		}
-		fmt.Println(err) //сделать лог
 		status, problem := domainerror.Problem(err, r)
 		response.Problem(w, status, problem)
 		return

@@ -75,9 +75,9 @@
 				
 				<option value="file9">github.com/adeladnagulov/TripGo/internal/http/timeutil/timeutil.go (0.0%)</option>
 				
-				<option value="file10">github.com/adeladnagulov/TripGo/internal/http/trip/create/convert.go (0.0%)</option>
+				<option value="file10">github.com/adeladnagulov/TripGo/internal/http/trip/create/convert.go (100.0%)</option>
 				
-				<option value="file11">github.com/adeladnagulov/TripGo/internal/http/trip/create/handler.go (0.0%)</option>
+				<option value="file11">github.com/adeladnagulov/TripGo/internal/http/trip/create/handler.go (100.0%)</option>
 				
 				<option value="file12">github.com/adeladnagulov/TripGo/internal/http/trip/finish/convert.go (0.0%)</option>
 				
@@ -1124,7 +1124,7 @@ import (
 )
 
 func toDomain(req api.TripData) trip.TripData {
-        <span class="cov0" title="0">return trip.TripData{
+        <span class="cov8" title="1">return trip.TripData{
                 DriverId:   req.DriverId,
                 UserId:     req.UserId,
                 StartPoint: trip.Coordinates{Lat: req.StartPoint.Latitude, Lon: req.StartPoint.Longitude},
@@ -1134,7 +1134,7 @@ func toDomain(req api.TripData) trip.TripData {
 }
 
 func toApi(t trip.Trip) api.Trip {
-        <span class="cov0" title="0">return api.Trip{
+        <span class="cov8" title="1">return api.Trip{
                 Id:             t.Id,
                 DriverId:       t.DriverId,
                 UserId:         t.UserId,
@@ -1161,41 +1161,39 @@ import (
         "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/adeladnagulov/TripGo/internal/http/domainerror"
         "github.com/adeladnagulov/TripGo/internal/http/response"
-        "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 )
 
 type Handler struct {
-        uc *create.CreateUseCase
+        uc tripUseCase
 }
 
-func NewHandler(us *create.CreateUseCase) *Handler {
-        <span class="cov0" title="0">return &amp;Handler{uc: us}
+func NewHandler(uc tripUseCase) *Handler {
+        <span class="cov8" title="1">return &amp;Handler{uc: uc}
 </span>}
 
 // CreateTrip Создать поездку
 // (POST /api/v1/trips)
 func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
-        <span class="cov0" title="0">var apiTripData api.TripData
+        <span class="cov8" title="1">var apiTripData api.TripData
         if err := json.NewDecoder(r.Body).Decode(&amp;apiTripData); err != nil </span>{
-                <span class="cov0" title="0">status, problem := domainerror.Problem(err, r)
+                <span class="cov8" title="1">status, problem := domainerror.Problem(err, r)
                 response.Problem(w, status, problem)
                 return
 </span>        }
-        <span class="cov0" title="0">tripData := toDomain(apiTripData)
+        <span class="cov8" title="1">tripData := toDomain(apiTripData)
         t, err := h.uc.CreateTrip(r.Context(), tripData)
         if err != nil </span>{
-                <span class="cov0" title="0">if errors.Is(err, trip.ErrDriverBusy) </span>{
-                        <span class="cov0" title="0">status, problem := domainerror.Problem(err, r)
+                <span class="cov8" title="1">if errors.Is(err, trip.ErrDriverBusy) </span>{
+                        <span class="cov8" title="1">status, problem := domainerror.Problem(err, r)
                         response.Problem(w, status, problem)
                         return
 </span>                }
-                <span class="cov0" title="0">fmt.Println(err) //сделать лог
-                status, problem := domainerror.Problem(err, r)
+                <span class="cov8" title="1">status, problem := domainerror.Problem(err, r)
                 response.Problem(w, status, problem)
                 return</span>
         }
 
-        <span class="cov0" title="0">resourceURL := fmt.Sprintf("/api/v1/trips/%s", t.Id.String())
+        <span class="cov8" title="1">resourceURL := fmt.Sprintf("/api/v1/trips/%s", t.Id.String())
         resp := toApi(*t)
         w.Header().Set("Location", resourceURL)
         response.Json(w, http.StatusCreated, resp)</span>
