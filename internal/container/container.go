@@ -48,8 +48,8 @@ func New(cfg *config.Config) (*Container, error) {
 	tm := txManager.NewTransactionManager(db.Pool)
 
 	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger)
-	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm)
-	getUc := getUsecase.NewGetUseCase(tripRepo)
+	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger)
+	getUc := getUsecase.NewGetUseCase(tripRepo, logger)
 
 	createH := create.NewHandler(createUc)
 	finishH := finish.NewHandler(finishUc)

@@ -3,6 +3,7 @@ package finish
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
@@ -10,14 +11,16 @@ import (
 )
 
 type FinishUseCase struct {
-	repo tripFinisher
-	tm   txManager
+	repo   tripFinisher
+	tm     txManager
+	logger *slog.Logger
 }
 
-func NewFinishUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
+func NewFinishUseCase(repo tripFinisher, tm txManager, logger *slog.Logger) *FinishUseCase {
 	return &FinishUseCase{
-		repo: repo,
-		tm:   tm,
+		repo:   repo,
+		tm:     tm,
+		logger: logger,
 	}
 }
 
@@ -29,6 +32,9 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
 
 	err = finishTrip.Finish(time.Now())
 	if err != nil {
+		s.logger.WarnContext(ctx, "trip already complited",
+			"id", finishTrip.Id,
+		)
 		return nil, err
 	}
 
@@ -42,5 +48,9 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
 	if err != nil {
 		return nil, err
 	}
+	s.logger.WarnContext(ctx, "trip finished successfully",
+		"id", finishTrip.Id,
+		"status", finishTrip.Status,
+	)
 	return finishTrip, nil
 }

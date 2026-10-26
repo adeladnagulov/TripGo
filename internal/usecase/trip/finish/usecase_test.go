@@ -2,6 +2,7 @@ package finish_test
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -112,7 +113,7 @@ func TestFinishTrip(t *testing.T) {
 			mockRepo := NewMocktripFinisher(ctrl)
 			mockTx := NewMocktxManager(ctrl)
 			tt.setup(mockRepo, mockTx)
-			us := finish.NewFinishUseCase(mockRepo, mockTx)
+			us := finish.NewFinishUseCase(mockRepo, mockTx, slog.Default())
 
 			result, err := us.FinishTrip(ctx, uuid.New())
 			if err != nil {

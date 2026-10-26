@@ -2,6 +2,7 @@ package get_test
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
@@ -45,7 +46,7 @@ func TestGetTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := NewMocktripGetter(ctrl)
 			tt.setup(mockRepo)
-			us := get.NewGetUseCase(mockRepo)
+			us := get.NewGetUseCase(mockRepo, slog.Default())
 
 			_, err := us.GetTrip(ctx, uuid.New())
 			assert.ErrorIs(t, err, tt.wantErr)
