@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/adeladnagulov/TripGo/internal/config"
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,6 +22,7 @@ func NewDB(ctx context.Context, cfg *config.Config) (*DB, error) {
 	pgxCfg.MinConns = int32(cfg.DatabaseMinConns)
 	pgxCfg.MaxConnLifetime = cfg.DatabaseMaxConnsLifetime
 	pgxCfg.ConnConfig.ConnectTimeout = cfg.DatabaseConnectTimeout
+	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer()
 
 	pool, err := pgxpool.NewWithConfig(ctx, pgxCfg)
 	if err != nil {
