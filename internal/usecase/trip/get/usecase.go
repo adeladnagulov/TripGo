@@ -3,18 +3,21 @@ package get
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
 )
 
 type GetUseCase struct {
-	repo tripGetter
+	repo   tripGetter
+	logger *slog.Logger
 }
 
-func NewGetUseCase(repo tripGetter) *GetUseCase {
+func NewGetUseCase(repo tripGetter, logger *slog.Logger) *GetUseCase {
 	return &GetUseCase{
-		repo: repo,
+		repo:   repo,
+		logger: logger,
 	}
 }
 
@@ -23,5 +26,8 @@ func (s *GetUseCase) GetTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 	if err != nil {
 		return nil, fmt.Errorf("get trip id=%v error: %w", id, err)
 	}
+	s.logger.WarnContext(ctx, "trip get successfully",
+		"id", trip.Id,
+	)
 	return trip, nil
 }

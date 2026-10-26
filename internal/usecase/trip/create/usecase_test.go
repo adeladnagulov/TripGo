@@ -2,6 +2,7 @@ package create_test
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
@@ -70,7 +71,7 @@ func TestCreateTrip(t *testing.T) {
 			mockRepo := NewMocktripCreator(ctrl)
 			mockTx := NewMocktxManager(ctrl)
 			tt.setup(mockRepo, mockTx)
-			us := create.NewCreateUseCase(mockRepo, mockTx, nil)
+			us := create.NewCreateUseCase(mockRepo, mockTx, slog.Default())
 
 			result, err := us.CreateTrip(ctx, tt.input)
 			if err != nil {

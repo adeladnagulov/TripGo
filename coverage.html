@@ -69,35 +69,39 @@
 				
 				<option value="file6">github.com/adeladnagulov/TripGo/internal/http/health/handler.go (0.0%)</option>
 				
-				<option value="file7">github.com/adeladnagulov/TripGo/internal/http/response/response.go (0.0%)</option>
+				<option value="file7">github.com/adeladnagulov/TripGo/internal/http/middleware/logging.go (0.0%)</option>
 				
-				<option value="file8">github.com/adeladnagulov/TripGo/internal/http/server.go (0.0%)</option>
+				<option value="file8">github.com/adeladnagulov/TripGo/internal/http/response/response.go (0.0%)</option>
 				
-				<option value="file9">github.com/adeladnagulov/TripGo/internal/http/timeutil/timeutil.go (0.0%)</option>
+				<option value="file9">github.com/adeladnagulov/TripGo/internal/http/server.go (0.0%)</option>
 				
-				<option value="file10">github.com/adeladnagulov/TripGo/internal/http/trip/create/convert.go (100.0%)</option>
+				<option value="file10">github.com/adeladnagulov/TripGo/internal/http/timeutil/timeutil.go (0.0%)</option>
 				
-				<option value="file11">github.com/adeladnagulov/TripGo/internal/http/trip/create/handler.go (100.0%)</option>
+				<option value="file11">github.com/adeladnagulov/TripGo/internal/http/trip/create/convert.go (100.0%)</option>
 				
-				<option value="file12">github.com/adeladnagulov/TripGo/internal/http/trip/finish/convert.go (100.0%)</option>
+				<option value="file12">github.com/adeladnagulov/TripGo/internal/http/trip/create/handler.go (100.0%)</option>
 				
-				<option value="file13">github.com/adeladnagulov/TripGo/internal/http/trip/finish/handler.go (100.0%)</option>
+				<option value="file13">github.com/adeladnagulov/TripGo/internal/http/trip/finish/convert.go (100.0%)</option>
 				
-				<option value="file14">github.com/adeladnagulov/TripGo/internal/http/trip/get/convert.go (100.0%)</option>
+				<option value="file14">github.com/adeladnagulov/TripGo/internal/http/trip/finish/handler.go (100.0%)</option>
 				
-				<option value="file15">github.com/adeladnagulov/TripGo/internal/http/trip/get/handler.go (100.0%)</option>
+				<option value="file15">github.com/adeladnagulov/TripGo/internal/http/trip/get/convert.go (100.0%)</option>
 				
-				<option value="file16">github.com/adeladnagulov/TripGo/internal/infra/postgres/postgres.go (0.0%)</option>
+				<option value="file16">github.com/adeladnagulov/TripGo/internal/http/trip/get/handler.go (100.0%)</option>
 				
-				<option value="file17">github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction/transaction_manager.go (0.0%)</option>
+				<option value="file17">github.com/adeladnagulov/TripGo/internal/infra/postgres/postgres.go (0.0%)</option>
 				
-				<option value="file18">github.com/adeladnagulov/TripGo/internal/repository/trip/trip_repository.go (0.0%)</option>
+				<option value="file18">github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction/transaction_manager.go (0.0%)</option>
 				
-				<option value="file19">github.com/adeladnagulov/TripGo/internal/usecase/trip/create/usecase.go (100.0%)</option>
+				<option value="file19">github.com/adeladnagulov/TripGo/internal/infra/telemetry/logger.go (0.0%)</option>
 				
-				<option value="file20">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (100.0%)</option>
+				<option value="file20">github.com/adeladnagulov/TripGo/internal/repository/trip/trip_repository.go (0.0%)</option>
 				
-				<option value="file21">github.com/adeladnagulov/TripGo/internal/usecase/trip/get/usecase.go (100.0%)</option>
+				<option value="file21">github.com/adeladnagulov/TripGo/internal/usecase/trip/create/usecase.go (100.0%)</option>
+				
+				<option value="file22">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (100.0%)</option>
+				
+				<option value="file23">github.com/adeladnagulov/TripGo/internal/usecase/trip/get/usecase.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -709,6 +713,7 @@ func main() {
 
 import (
         "fmt"
+        "log/slog"
         "time"
 
         "github.com/caarlos0/env"
@@ -737,6 +742,19 @@ func NewConfig() (*Config, error) {
 </span>        }
         <span class="cov0" title="0">return &amp;cfg, nil</span>
 }
+
+func ParseLodLevel(levelStr string) slog.Level {
+        <span class="cov0" title="0">switch levelStr </span>{
+        case "debug":
+                <span class="cov0" title="0">return slog.LevelDebug</span>
+        case "warn":
+                <span class="cov0" title="0">return slog.LevelWarn</span>
+        case "error":
+                <span class="cov0" title="0">return slog.LevelError</span>
+        default:
+                <span class="cov0" title="0">return slog.LevelInfo</span>
+        }
+}
 </pre>
 		
 		<pre class="file" id="file3" style="display: none">package container
@@ -754,11 +772,13 @@ import (
         "github.com/adeladnagulov/TripGo/internal/config"
         server "github.com/adeladnagulov/TripGo/internal/http"
         "github.com/adeladnagulov/TripGo/internal/http/health"
+        "github.com/adeladnagulov/TripGo/internal/http/middleware"
         "github.com/adeladnagulov/TripGo/internal/http/trip/create"
         "github.com/adeladnagulov/TripGo/internal/http/trip/finish"
         "github.com/adeladnagulov/TripGo/internal/http/trip/get"
         "github.com/adeladnagulov/TripGo/internal/infra/postgres"
         txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
+        "github.com/adeladnagulov/TripGo/internal/infra/telemetry"
         "github.com/adeladnagulov/TripGo/internal/repository/trip"
         createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
         finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
@@ -776,6 +796,8 @@ func New(cfg *config.Config) (*Container, error) {
         <span class="cov0" title="0">connectCtx, cancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
         defer cancel()
 </span>
+        <span class="cov0" title="0">logger := telemetry.NewLogger(config.ParseLodLevel(cfg.LogLevel))
+</span>
         <span class="cov0" title="0">db, err := postgres.NewDB(connectCtx, cfg)
         if err != nil </span>{
                 <span class="cov0" title="0">return nil, fmt.Errorf("Failed to load storage: %v", err)
@@ -784,9 +806,9 @@ func New(cfg *config.Config) (*Container, error) {
         <span class="cov0" title="0">tripRepo := trip.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
         tm := txManager.NewTransactionManager(db.Pool)
 </span>
-        <span class="cov0" title="0">createUc := createUsecase.NewCreateUseCase(tripRepo, tm)
-        finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm)
-        getUc := getUsecase.NewCreateUseCase(tripRepo)
+        <span class="cov0" title="0">createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger)
+        finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger)
+        getUc := getUsecase.NewGetUseCase(tripRepo, logger)
 </span>
         <span class="cov0" title="0">createH := create.NewHandler(createUc)
         finishH := finish.NewHandler(finishUc)
@@ -796,6 +818,8 @@ func New(cfg *config.Config) (*Container, error) {
 </span>
         <span class="cov0" title="0">si := server.NewServerInterface(getH, createH, finishH, healthH)
         r := chi.NewRouter()
+</span>
+        <span class="cov0" title="0">r.Use(middleware.Logging(logger))
 </span>
         <span class="cov0" title="0">api.HandlerFromMux(si, r)
         srv := &amp;http.Server{
@@ -1014,7 +1038,68 @@ func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package response
+		<pre class="file" id="file7" style="display: none">package middleware
+
+import (
+        "log/slog"
+        "net/http"
+        "time"
+
+        "github.com/go-chi/chi/v5"
+)
+
+func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
+        <span class="cov0" title="0">return func(next http.Handler) http.Handler </span>{
+                <span class="cov0" title="0">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov0" title="0">start := time.Now()
+                        lrw := &amp;loggingResponseWriter{ResponseWriter: w, status: http.StatusOK}
+                        next.ServeHTTP(lrw, r)
+</span>
+                        <span class="cov0" title="0">duration := time.Since(start)
+                        level := slog.LevelInfo
+                        if lrw.status &gt;= 500 </span>{
+                                <span class="cov0" title="0">level = slog.LevelError
+</span>                        }
+
+                        <span class="cov0" title="0">routePattern := ""
+                        if routeCtx := chi.RouteContext(r.Context()); routeCtx != nil </span>{
+                                <span class="cov0" title="0">routePattern = routeCtx.RoutePattern()
+</span>                        }
+
+                        <span class="cov0" title="0">slog.LogAttrs(r.Context(), level, "request handled",
+                                slog.String("service", "trip-service"),
+                                slog.String("method", r.Method),
+                                slog.String("route", routePattern),
+                                slog.Int("status", lrw.status),
+                                slog.Int64("duration_ms", duration.Milliseconds()),
+                        )</span>
+                })
+        }
+}
+
+type loggingResponseWriter struct {
+        http.ResponseWriter
+        status      int
+        wroteHeader bool
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+        <span class="cov0" title="0">if !lrw.wroteHeader </span>{
+                <span class="cov0" title="0">lrw.status = code
+                lrw.wroteHeader = true
+                lrw.ResponseWriter.WriteHeader(code)
+</span>        }
+}
+
+func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
+        <span class="cov0" title="0">if !lrw.wroteHeader </span>{
+                <span class="cov0" title="0">lrw.WriteHeader(http.StatusOK)
+</span>        }
+        <span class="cov0" title="0">return lrw.ResponseWriter.Write(b)</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package response
 
 import (
         "encoding/json"
@@ -1036,7 +1121,7 @@ func Problem(w http.ResponseWriter, status int, problem api.Problem) {
 </span>}
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package server
+		<pre class="file" id="file9" style="display: none">package server
 
 import (
         "net/http"
@@ -1098,7 +1183,7 @@ func (s *Server) Ready(w http.ResponseWriter, r *http.Request) {
 </span>}
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package timeutil
+		<pre class="file" id="file10" style="display: none">package timeutil
 
 import "time"
 
@@ -1115,7 +1200,7 @@ func FormatTimePtr(t *time.Time) *time.Time {
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package create
+		<pre class="file" id="file11" style="display: none">package create
 
 import (
         "github.com/adeladnagulov/TripGo/api"
@@ -1149,7 +1234,7 @@ func toApi(t trip.Trip) api.Trip {
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package create
+		<pre class="file" id="file12" style="display: none">package create
 
 import (
         "encoding/json"
@@ -1200,7 +1285,7 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package finish
+		<pre class="file" id="file13" style="display: none">package finish
 
 import (
         "github.com/adeladnagulov/TripGo/api"
@@ -1224,7 +1309,7 @@ func toApi(t trip.Trip) api.Trip {
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package finish
+		<pre class="file" id="file14" style="display: none">package finish
 
 import (
         "errors"
@@ -1265,7 +1350,7 @@ func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package get
+		<pre class="file" id="file15" style="display: none">package get
 
 import (
         "github.com/adeladnagulov/TripGo/api"
@@ -1289,7 +1374,7 @@ func toApi(t trip.Trip) api.Trip {
 }
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package get
+		<pre class="file" id="file16" style="display: none">package get
 
 import (
         "errors"
@@ -1330,7 +1415,7 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package postgres
+		<pre class="file" id="file17" style="display: none">package postgres
 
 import (
         "context"
@@ -1380,7 +1465,7 @@ func (db *DB) PingTrip(ctx context.Context) error {
 </span>}
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package txManager
+		<pre class="file" id="file18" style="display: none">package txManager
 
 import (
         "context"
@@ -1430,7 +1515,63 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package trip
+		<pre class="file" id="file19" style="display: none">package telemetry
+
+import (
+        "context"
+        "log/slog"
+        "os"
+        "time"
+
+        "go.opentelemetry.io/otel/trace"
+)
+
+func NewLogger(level slog.Level) *slog.Logger {
+        <span class="cov0" title="0">opts := &amp;slog.HandlerOptions{
+                Level: level,
+                ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr </span>{
+                        <span class="cov0" title="0">if a.Key == slog.TimeKey </span>{
+                                <span class="cov0" title="0">if t, ok := a.Value.Any().(time.Time); ok </span>{
+                                        <span class="cov0" title="0">a.Value = slog.StringValue(t.UTC().Format("2006-01-02T15:04:05.000Z"))
+</span>                                }
+                        }
+                        <span class="cov0" title="0">return a</span>
+                },
+        }
+
+        <span class="cov0" title="0">handler := slog.NewJSONHandler(os.Stdout, opts)
+        return slog.New(&amp;traceHandler{inner: handler})</span>
+}
+
+type traceHandler struct {
+        inner slog.Handler
+}
+
+func (h *traceHandler) Enabled(ctx context.Context, level slog.Level) bool {
+        <span class="cov0" title="0">return h.inner.Enabled(ctx, level)
+</span>}
+
+func (h *traceHandler) Handle(ctx context.Context, r slog.Record) error {
+        <span class="cov0" title="0">if span := trace.SpanFromContext(ctx); span.SpanContext().IsValid() </span>{
+                <span class="cov0" title="0">sc := span.SpanContext()
+                r.AddAttrs(
+                        slog.String("trace_id", sc.TraceID().String()),
+                        slog.String("span_id", sc.SpanID().String()),
+                )
+</span>        }
+        <span class="cov0" title="0">return h.inner.Handle(ctx, r)</span>
+}
+
+func (h *traceHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+        <span class="cov0" title="0">return &amp;traceHandler{inner: h.inner.WithAttrs(attrs)}
+</span>}
+
+func (h *traceHandler) WithGroup(name string) slog.Handler {
+        <span class="cov0" title="0">return &amp;traceHandler{inner: h.inner.WithGroup(name)}
+</span>}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package trip
 
 import (
         "context"
@@ -1633,11 +1774,12 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 }
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package create
+		<pre class="file" id="file21" style="display: none">package create
 
 import (
         "context"
         "fmt"
+        "log/slog"
         "time"
 
         "github.com/adeladnagulov/TripGo/internal/domain/trip"
@@ -1645,14 +1787,16 @@ import (
 )
 
 type CreateUseCase struct {
-        repo tripCreator
-        tm   txManager
+        repo   tripCreator
+        tm     txManager
+        logger *slog.Logger
 }
 
-func NewCreateUseCase(repo tripCreator, tm txManager) *CreateUseCase {
+func NewCreateUseCase(repo tripCreator, tm txManager, logger *slog.Logger) *CreateUseCase {
         <span class="cov8" title="1">return &amp;CreateUseCase{
-                repo: repo,
-                tm:   tm,
+                repo:   repo,
+                tm:     tm,
+                logger: logger,
 </span>        }
 }
 
@@ -1672,17 +1816,28 @@ func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*tr
                 <span class="cov8" title="1">return s.repo.Create(ctx, &amp;t)
 </span>        })
         <span class="cov8" title="1">if err != nil </span>{
-                <span class="cov8" title="1">return nil, fmt.Errorf("create trip error: %w", err)
+                <span class="cov8" title="1">s.logger.WarnContext(ctx, "create trip error",
+                        "id", t.Id,
+                        "driver_id", t.DriverId,
+                )
+                return nil, fmt.Errorf("create trip error: %w", err)
 </span>        }
-        <span class="cov8" title="1">return &amp;t, nil</span>
+        <span class="cov8" title="1">s.logger.InfoContext(ctx, "trip created successfully",
+                "id", t.Id,
+                "driver_id", t.DriverId,
+                "user_id", t.UserId,
+                "price", t.Price,
+        )
+        return &amp;t, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package finish
+		<pre class="file" id="file22" style="display: none">package finish
 
 import (
         "context"
         "fmt"
+        "log/slog"
         "time"
 
         "github.com/adeladnagulov/TripGo/internal/domain/trip"
@@ -1690,14 +1845,16 @@ import (
 )
 
 type FinishUseCase struct {
-        repo tripFinisher
-        tm   txManager
+        repo   tripFinisher
+        tm     txManager
+        logger *slog.Logger
 }
 
-func NewFinishUseCase(repo tripFinisher, tm txManager) *FinishUseCase {
+func NewFinishUseCase(repo tripFinisher, tm txManager, logger *slog.Logger) *FinishUseCase {
         <span class="cov8" title="1">return &amp;FinishUseCase{
-                repo: repo,
-                tm:   tm,
+                repo:   repo,
+                tm:     tm,
+                logger: logger,
 </span>        }
 }
 
@@ -1709,7 +1866,10 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
 
         <span class="cov8" title="1">err = finishTrip.Finish(time.Now())
         if err != nil </span>{
-                <span class="cov8" title="1">return nil, err
+                <span class="cov8" title="1">s.logger.WarnContext(ctx, "trip already complited",
+                        "id", finishTrip.Id,
+                )
+                return nil, err
 </span>        }
 
         <span class="cov8" title="1">err = s.tm.Do(ctx, func(ctx context.Context) error </span>{
@@ -1722,27 +1882,34 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
         <span class="cov8" title="1">if err != nil </span>{
                 <span class="cov8" title="1">return nil, err
 </span>        }
-        <span class="cov8" title="1">return finishTrip, nil</span>
+        <span class="cov8" title="1">s.logger.WarnContext(ctx, "trip finished successfully",
+                "id", finishTrip.Id,
+                "status", finishTrip.Status,
+        )
+        return finishTrip, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file21" style="display: none">package get
+		<pre class="file" id="file23" style="display: none">package get
 
 import (
         "context"
         "fmt"
+        "log/slog"
 
         "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/google/uuid"
 )
 
 type GetUseCase struct {
-        repo tripGetter
+        repo   tripGetter
+        logger *slog.Logger
 }
 
-func NewCreateUseCase(repo tripGetter) *GetUseCase {
+func NewGetUseCase(repo tripGetter, logger *slog.Logger) *GetUseCase {
         <span class="cov8" title="1">return &amp;GetUseCase{
-                repo: repo,
+                repo:   repo,
+                logger: logger,
 </span>        }
 }
 
@@ -1751,7 +1918,10 @@ func (s *GetUseCase) GetTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, err
         if err != nil </span>{
                 <span class="cov8" title="1">return nil, fmt.Errorf("get trip id=%v error: %w", id, err)
 </span>        }
-        <span class="cov8" title="1">return trip, nil</span>
+        <span class="cov8" title="1">s.logger.WarnContext(ctx, "trip get successfully",
+                "id", trip.Id,
+        )
+        return trip, nil</span>
 }
 </pre>
 		
