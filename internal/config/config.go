@@ -22,6 +22,11 @@ type Config struct {
 	DatabaseMaxConnsLifetime time.Duration `env:"DATABASE_MAX_CONN_LIFETIME" envDefault:"30m"`
 	DatabaseConnectTimeout   time.Duration `env:"DATABASE_CONNECT_TIMEOUT" envDefault:"5s"`
 	DatabaseQueryTimeout     time.Duration `env:"DATABASE_QUERY_TIMEOUT" envDefault:"3s"`
+	OtelServiceName          string        `env:"OTEL_SERVICE_NAME" envDefault:"trip-service"`
+	OtelExporterEndpoint     string        `env:"OTEL_EXPORTER_OTLP_ENDPOINT" envDefault:"http://localhost:22318"`
+	OtelExporterProtocol     string        `env:"OTEL_EXPORTER_OTLP_PROTOCOL" envDefault:"http/protobuf"`
+	OtelResourceAttrs        string        `env:"OTEL_RESOURCE_ATTRIBUTES" envDefault:"service.namespace=tripgo,deployment.environment=local"`
+	OtelTracesSampler        string        `env:"OTEL_TRACES_SAMPLER" envDefault:"parentbased_always_on"`
 }
 
 func NewConfig() (*Config, error) {
