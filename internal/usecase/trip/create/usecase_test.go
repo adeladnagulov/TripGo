@@ -70,7 +70,7 @@ func TestCreateTrip(t *testing.T) {
 			mockRepo := NewMocktripCreator(ctrl)
 			mockTx := NewMocktxManager(ctrl)
 			tt.setup(mockRepo, mockTx)
-			us := create.NewCreateUseCase(mockRepo, mockTx)
+			us := create.NewCreateUseCase(mockRepo, mockTx, nil)
 
 			result, err := us.CreateTrip(ctx, tt.input)
 			if err != nil {
