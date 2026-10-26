@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -41,8 +40,7 @@ func New(cfg *config.Config) (*Container, error) {
 	connectCtx, cancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
 	defer cancel()
 
-	logger := telemetry.NewLogger(slog.LevelInfo)
-	slog.SetDefault(logger)
+	logger := telemetry.NewLogger(config.ParseLodLevel(cfg.LogLevel))
 
 	db, err := postgres.NewDB(connectCtx, cfg)
 	if err != nil {
@@ -54,7 +52,7 @@ func New(cfg *config.Config) (*Container, error) {
 
 	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger)
 	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm)
-	getUc := getUsecase.NewCreateUseCase(tripRepo)
+	getUc := getUsecase.NewGetUseCase(tripRepo)
 
 	createH := create.NewHandler(createUc)
 	finishH := finish.NewHandler(finishUc)
