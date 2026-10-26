@@ -49,7 +49,7 @@ func New(cfg *config.Config) (*Container, error) {
 	tripRepo := trip.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
 	tm := txManager.NewTransactionManager(db.Pool)
 
-	createUc := createUsecase.NewCreateUseCase(tripRepo, tm)
+	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger)
 	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm)
 	getUc := getUsecase.NewCreateUseCase(tripRepo)
 
@@ -62,12 +62,12 @@ func New(cfg *config.Config) (*Container, error) {
 	si := server.NewServerInterface(getH, createH, finishH, healthH)
 	r := chi.NewRouter()
 
-	logRouter := middleware.Logging(r)
+	r.Use(middleware.Logging(logger))
 
 	api.HandlerFromMux(si, r)
 	srv := &http.Server{
 		Addr:              cfg.HttpAddr,
-		Handler:           logRouter,
+		Handler:           r,
 		ReadTimeout:       cfg.HttpReadTimeout,
 		ReadHeaderTimeout: cfg.HttpReadHeaderTimeout,
 		WriteTimeout:      cfg.HttpWriteTimeout,

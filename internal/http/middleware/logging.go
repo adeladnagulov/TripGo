@@ -4,28 +4,37 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func Logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		lrw := &loggingResponseWriter{ResponseWriter: w, status: http.StatusOK}
-		next.ServeHTTP(lrw, r)
+func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			lrw := &loggingResponseWriter{ResponseWriter: w, status: http.StatusOK}
+			next.ServeHTTP(lrw, r)
 
-		duration := time.Since(start)
-		level := slog.LevelInfo
-		if lrw.status >= 500 {
-			level = slog.LevelError
-		}
+			duration := time.Since(start)
+			level := slog.LevelInfo
+			if lrw.status >= 500 {
+				level = slog.LevelError
+			}
 
-		slog.LogAttrs(r.Context(), level, "request handled",
-			slog.String("service", "trip-service"),
-			slog.String("metod", r.Method),
-			slog.String("route", r.URL.Path),
-			slog.Int("status", lrw.status),
-			slog.Int64("duration_ms", duration.Milliseconds()),
-		)
-	})
+			routePattern := ""
+			if routeCtx := chi.RouteContext(r.Context()); routeCtx != nil {
+				routePattern = routeCtx.RoutePattern()
+			}
+
+			slog.LogAttrs(r.Context(), level, "request handled",
+				slog.String("service", "trip-service"),
+				slog.String("method", r.Method),
+				slog.String("route", routePattern),
+				slog.Int("status", lrw.status),
+				slog.Int64("duration_ms", duration.Milliseconds()),
+			)
+		})
+	}
 }
 
 type loggingResponseWriter struct {
