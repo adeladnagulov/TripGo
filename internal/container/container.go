@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,11 +15,13 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/config"
 	server "github.com/adeladnagulov/TripGo/internal/http"
 	"github.com/adeladnagulov/TripGo/internal/http/health"
+	"github.com/adeladnagulov/TripGo/internal/http/middleware"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/create"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/finish"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/get"
 	"github.com/adeladnagulov/TripGo/internal/infra/postgres"
 	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
+	"github.com/adeladnagulov/TripGo/internal/infra/telemetry"
 	"github.com/adeladnagulov/TripGo/internal/repository/trip"
 	createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
@@ -37,6 +40,9 @@ type Container struct {
 func New(cfg *config.Config) (*Container, error) {
 	connectCtx, cancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
 	defer cancel()
+
+	logger := telemetry.NewLogger(slog.LevelInfo)
+	slog.SetDefault(logger)
 
 	db, err := postgres.NewDB(connectCtx, cfg)
 	if err != nil {
@@ -77,9 +83,12 @@ func New(cfg *config.Config) (*Container, error) {
 		BaseRouter:       r,
 		ErrorHandlerFunc: si.HandlerAPIError,
 	})
+	logRouter := middleware.Logging(r)
+
+	api.HandlerFromMux(si, r)
 	srv := &http.Server{
 		Addr:              cfg.HttpAddr,
-		Handler:           r,
+		Handler:           logRouter,
 		ReadTimeout:       cfg.HttpReadTimeout,
 		ReadHeaderTimeout: cfg.HttpReadHeaderTimeout,
 		WriteTimeout:      cfg.HttpWriteTimeout,
