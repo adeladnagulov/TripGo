@@ -26,7 +26,7 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 				routePattern = routeCtx.RoutePattern()
 			}
 
-			slog.LogAttrs(r.Context(), level, "request handled",
+			logger.LogAttrs(r.Context(), level, "request handled",
 				slog.String("service", "trip-service"),
 				slog.String("method", r.Method),
 				slog.String("route", routePattern),

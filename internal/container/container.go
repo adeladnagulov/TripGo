@@ -31,15 +31,20 @@ import (
 )
 
 type Container struct {
-	srv *http.Server
-	cfg *config.Config
-	db  *postgres.DB
+	srv    *http.Server
+	cfg    *config.Config
+	db     *postgres.DB
+	tracer *telemetry.TracerProvider
 }
 
 func New(cfg *config.Config) (*Container, error) {
 	connectCtx, cancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
 	defer cancel()
 
+	tracer, err := telemetry.NewTracer(connectCtx, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init tracer: %w", err)
+	}
 	logger := telemetry.NewLogger(config.ParseLodLevel(cfg.LogLevel))
 
 	db, err := postgres.NewDB(connectCtx, cfg)
@@ -82,6 +87,7 @@ func New(cfg *config.Config) (*Container, error) {
 		ErrorHandlerFunc: si.HandlerAPIError,
 	})
 	logRouter := middleware.Logging(r)
+	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
 
 	api.HandlerFromMux(si, r)
@@ -93,7 +99,7 @@ func New(cfg *config.Config) (*Container, error) {
 		WriteTimeout:      cfg.HttpWriteTimeout,
 		IdleTimeout:       cfg.HttpIdleTimeout,
 	}
-	return &Container{srv: srv, cfg: cfg, db: db}, nil
+	return &Container{srv: srv, cfg: cfg, db: db, tracer: tracer}, nil
 }
 
 func (c *Container) Run() {
@@ -102,7 +108,11 @@ func (c *Container) Run() {
 	go func() {
 		log.Printf("Starting server on %s", c.srv.Addr)
 		if err := c.srv.ListenAndServe(); err != nil {
+<<<<<<< HEAD
 			srvErrCh <- err
+=======
+			log.Printf("Server error: %v", err)
+>>>>>>> 370158b (feat: add trace)
 		}
 	}()
 
@@ -120,6 +130,10 @@ func (c *Container) Run() {
 
 	shotdownCtx, cancel := context.WithTimeout(context.Background(), c.cfg.ShutdownTimeout)
 	defer cancel()
+
+	if c.tracer != nil {
+		defer c.tracer.Shutdown(shotdownCtx)
+	}
 
 	if err := c.srv.Shutdown(shotdownCtx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
