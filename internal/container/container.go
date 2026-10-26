@@ -31,14 +31,14 @@ type Container struct {
 	srv    *http.Server
 	cfg    *config.Config
 	db     *postgres.DB
-	tracer *telemetry.TracerProvider
+	tracer *telemetry.OTelProviders
 }
 
 func New(cfg *config.Config) (*Container, error) {
 	connectCtx, cancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
 	defer cancel()
 
-	tracer, err := telemetry.NewTracer(connectCtx, cfg)
+	provider, err := telemetry.NewOTel(connectCtx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init tracer: %w", err)
 	}
@@ -67,6 +67,7 @@ func New(cfg *config.Config) (*Container, error) {
 
 	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
+	r.Use(middleware.Metrics(provider.Meter.Meter(cfg.OtelServiceName)))
 
 	api.HandlerFromMux(si, r)
 	srv := &http.Server{
@@ -77,7 +78,7 @@ func New(cfg *config.Config) (*Container, error) {
 		WriteTimeout:      cfg.HttpWriteTimeout,
 		IdleTimeout:       cfg.HttpIdleTimeout,
 	}
-	return &Container{srv: srv, cfg: cfg, db: db, tracer: tracer}, nil
+	return &Container{srv: srv, cfg: cfg, db: db, tracer: provider}, nil
 }
 
 func (c *Container) Run() {
