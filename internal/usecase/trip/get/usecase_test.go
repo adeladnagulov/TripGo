@@ -45,7 +45,7 @@ func TestGetTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := NewMocktripGetter(ctrl)
 			tt.setup(mockRepo)
-			us := get.NewCreateUseCase(mockRepo)
+			us := get.NewGetUseCase(mockRepo)
 
 			_, err := us.GetTrip(ctx, uuid.New())
 			assert.ErrorIs(t, err, tt.wantErr)

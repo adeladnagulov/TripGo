@@ -12,7 +12,7 @@ type GetUseCase struct {
 	repo tripGetter
 }
 
-func NewCreateUseCase(repo tripGetter) *GetUseCase {
+func NewGetUseCase(repo tripGetter) *GetUseCase {
 	return &GetUseCase{
 		repo: repo,
 	}

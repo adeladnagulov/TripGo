@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/caarlos0/env"
@@ -29,4 +30,17 @@ func NewConfig() (*Config, error) {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 	return &cfg, nil
+}
+
+func ParseLodLevel(levelStr string) slog.Level {
+	switch levelStr {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
