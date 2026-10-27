@@ -88,6 +88,7 @@ func New(cfg *config.Config) (*Container, error) {
 		ErrorHandlerFunc: si.HandlerAPIError,
 	})
 	logRouter := middleware.Logging(r)
+	r.Use(middleware.Recover(logger))
 	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
 	r.Use(middleware.Metrics(meter))
