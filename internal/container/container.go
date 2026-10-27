@@ -66,6 +66,7 @@ func New(cfg *config.Config) (*Container, error) {
 	si := server.NewServerInterface(getH, createH, finishH, healthH)
 	r := chi.NewRouter()
 
+	r.Use(middleware.Recover(logger))
 	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
 	r.Use(middleware.Metrics(meter))
