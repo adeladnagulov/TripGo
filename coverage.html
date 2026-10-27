@@ -71,41 +71,45 @@
 				
 				<option value="file7">github.com/adeladnagulov/TripGo/internal/http/middleware/logging.go (0.0%)</option>
 				
-				<option value="file8">github.com/adeladnagulov/TripGo/internal/http/middleware/tracing.go (0.0%)</option>
+				<option value="file8">github.com/adeladnagulov/TripGo/internal/http/middleware/metrics.go (0.0%)</option>
 				
-				<option value="file9">github.com/adeladnagulov/TripGo/internal/http/response/response.go (0.0%)</option>
+				<option value="file9">github.com/adeladnagulov/TripGo/internal/http/middleware/recover.go (0.0%)</option>
 				
-				<option value="file10">github.com/adeladnagulov/TripGo/internal/http/server.go (0.0%)</option>
+				<option value="file10">github.com/adeladnagulov/TripGo/internal/http/middleware/tracing.go (0.0%)</option>
 				
-				<option value="file11">github.com/adeladnagulov/TripGo/internal/http/timeutil/timeutil.go (0.0%)</option>
+				<option value="file11">github.com/adeladnagulov/TripGo/internal/http/response/response.go (0.0%)</option>
 				
-				<option value="file12">github.com/adeladnagulov/TripGo/internal/http/trip/create/convert.go (100.0%)</option>
+				<option value="file12">github.com/adeladnagulov/TripGo/internal/http/server.go (0.0%)</option>
 				
-				<option value="file13">github.com/adeladnagulov/TripGo/internal/http/trip/create/handler.go (100.0%)</option>
+				<option value="file13">github.com/adeladnagulov/TripGo/internal/http/timeutil/timeutil.go (0.0%)</option>
 				
-				<option value="file14">github.com/adeladnagulov/TripGo/internal/http/trip/finish/convert.go (100.0%)</option>
+				<option value="file14">github.com/adeladnagulov/TripGo/internal/http/trip/create/convert.go (100.0%)</option>
 				
-				<option value="file15">github.com/adeladnagulov/TripGo/internal/http/trip/finish/handler.go (100.0%)</option>
+				<option value="file15">github.com/adeladnagulov/TripGo/internal/http/trip/create/handler.go (100.0%)</option>
 				
-				<option value="file16">github.com/adeladnagulov/TripGo/internal/http/trip/get/convert.go (100.0%)</option>
+				<option value="file16">github.com/adeladnagulov/TripGo/internal/http/trip/finish/convert.go (100.0%)</option>
 				
-				<option value="file17">github.com/adeladnagulov/TripGo/internal/http/trip/get/handler.go (100.0%)</option>
+				<option value="file17">github.com/adeladnagulov/TripGo/internal/http/trip/finish/handler.go (100.0%)</option>
 				
-				<option value="file18">github.com/adeladnagulov/TripGo/internal/infra/postgres/postgres.go (0.0%)</option>
+				<option value="file18">github.com/adeladnagulov/TripGo/internal/http/trip/get/convert.go (100.0%)</option>
 				
-				<option value="file19">github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction/transaction_manager.go (0.0%)</option>
+				<option value="file19">github.com/adeladnagulov/TripGo/internal/http/trip/get/handler.go (100.0%)</option>
 				
-				<option value="file20">github.com/adeladnagulov/TripGo/internal/infra/telemetry/logger.go (0.0%)</option>
+				<option value="file20">github.com/adeladnagulov/TripGo/internal/infra/postgres/postgres.go (0.0%)</option>
 				
-				<option value="file21">github.com/adeladnagulov/TripGo/internal/infra/telemetry/tracer.go (0.0%)</option>
+				<option value="file21">github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction/transaction_manager.go (0.0%)</option>
 				
-				<option value="file22">github.com/adeladnagulov/TripGo/internal/repository/trip/trip_repository.go (0.0%)</option>
+				<option value="file22">github.com/adeladnagulov/TripGo/internal/infra/telemetry/logger.go (0.0%)</option>
 				
-				<option value="file23">github.com/adeladnagulov/TripGo/internal/usecase/trip/create/usecase.go (100.0%)</option>
+				<option value="file23">github.com/adeladnagulov/TripGo/internal/infra/telemetry/otel.go (0.0%)</option>
 				
-				<option value="file24">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (100.0%)</option>
+				<option value="file24">github.com/adeladnagulov/TripGo/internal/repository/trip/trip_repository.go (0.0%)</option>
 				
-				<option value="file25">github.com/adeladnagulov/TripGo/internal/usecase/trip/get/usecase.go (100.0%)</option>
+				<option value="file25">github.com/adeladnagulov/TripGo/internal/usecase/trip/create/usecase.go (93.3%)</option>
+				
+				<option value="file26">github.com/adeladnagulov/TripGo/internal/usecase/trip/finish/usecase.go (95.2%)</option>
+				
+				<option value="file27">github.com/adeladnagulov/TripGo/internal/usecase/trip/get/usecase.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -777,6 +781,8 @@ import (
         "os/signal"
         "syscall"
 
+        "github.com/go-chi/chi/v5"
+
         "github.com/adeladnagulov/TripGo/api"
         "github.com/adeladnagulov/TripGo/internal/config"
         server "github.com/adeladnagulov/TripGo/internal/http"
@@ -792,36 +798,36 @@ import (
         createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
         finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
         getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
-        "github.com/go-chi/chi/v5"
 )
 
 type Container struct {
         srv    *http.Server
         cfg    *config.Config
         db     *postgres.DB
-        tracer *telemetry.TracerProvider
+        tracer *telemetry.OTelProviders
 }
 
 func New(cfg *config.Config) (*Container, error) {
         <span class="cov0" title="0">connectCtx, cancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
         defer cancel()
 </span>
-        <span class="cov0" title="0">tracer, err := telemetry.NewTracer(connectCtx, cfg)
+        <span class="cov0" title="0">provider, err := telemetry.NewOTel(connectCtx, cfg)
         if err != nil </span>{
                 <span class="cov0" title="0">return nil, fmt.Errorf("failed to init tracer: %w", err)
 </span>        }
         <span class="cov0" title="0">logger := telemetry.NewLogger(config.ParseLodLevel(cfg.LogLevel))
+        meter := provider.Meter.Meter(cfg.OtelServiceName)
 </span>
         <span class="cov0" title="0">db, err := postgres.NewDB(connectCtx, cfg)
         if err != nil </span>{
-                <span class="cov0" title="0">return nil, fmt.Errorf("Failed to load storage: %v", err)
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to load storage: %v", err)
 </span>        }
 
         <span class="cov0" title="0">tripRepo := trip.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
         tm := txManager.NewTransactionManager(db.Pool)
 </span>
-        <span class="cov0" title="0">createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger)
-        finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger)
+        <span class="cov0" title="0">createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger, meter)
+        finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger, meter)
         getUc := getUsecase.NewGetUseCase(tripRepo, logger)
 </span>
         <span class="cov0" title="0">createH := create.NewHandler(createUc)
@@ -833,8 +839,10 @@ func New(cfg *config.Config) (*Container, error) {
         <span class="cov0" title="0">si := server.NewServerInterface(getH, createH, finishH, healthH)
         r := chi.NewRouter()
 </span>
-        <span class="cov0" title="0">r.Use(middleware.Tracing())
+        <span class="cov0" title="0">r.Use(middleware.Recover(logger))
+        r.Use(middleware.Tracing())
         r.Use(middleware.Logging(logger))
+        r.Use(middleware.Metrics(meter))
 </span>
         <span class="cov0" title="0">api.HandlerFromMux(si, r)
         srv := &amp;http.Server{
@@ -845,7 +853,7 @@ func New(cfg *config.Config) (*Container, error) {
                 WriteTimeout:      cfg.HttpWriteTimeout,
                 IdleTimeout:       cfg.HttpIdleTimeout,
 </span>        }
-        <span class="cov0" title="0">return &amp;Container{srv: srv, cfg: cfg, db: db, tracer: tracer}, nil</span>
+        <span class="cov0" title="0">return &amp;Container{srv: srv, cfg: cfg, db: db, tracer: provider}, nil</span>
 }
 
 func (c *Container) Run() {
@@ -944,11 +952,12 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
                 <span class="cov8" title="1">return http.StatusOK, api.Problem{}
 </span>        }
         <span class="cov8" title="1">host := r.URL.Host
+        typeConflict := "about:blank"
         switch </span>{
         case isValidationError(err):
                 <span class="cov8" title="1">detail := "invalid request body or parameters"
                 return http.StatusBadRequest, api.BadRequest{
-                        Type:     "about:blank",
+                        Type:     typeConflict,
                         Title:    http.StatusText(http.StatusBadRequest),
                         Status:   http.StatusBadRequest,
                         Detail:   &amp;detail,
@@ -958,7 +967,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
         case errors.Is(err, trip.ErrDriverBusy):
                 <span class="cov8" title="1">detail := "driver already has active trip"
                 return http.StatusConflict, api.CreateTripConflict{
-                        Type:     "about:blank",
+                        Type:     typeConflict,
                         Title:    http.StatusText(http.StatusConflict),
                         Status:   http.StatusConflict,
                         Detail:   &amp;detail,
@@ -968,7 +977,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
         case errors.Is(err, trip.ErrTripCompleted):
                 <span class="cov8" title="1">detail := "trip is already over"
                 return http.StatusConflict, api.BadRequest{
-                        Type:     "about:blank",
+                        Type:     typeConflict,
                         Title:    http.StatusText(http.StatusConflict),
                         Status:   http.StatusConflict,
                         Detail:   &amp;detail,
@@ -978,7 +987,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
         case errors.Is(err, trip.ErrNotFound):
                 <span class="cov8" title="1">detail := "trip with an id does not exist"
                 return http.StatusNotFound, api.BadRequest{
-                        Type:     "about:blank",
+                        Type:     typeConflict,
                         Title:    http.StatusText(http.StatusNotFound),
                         Status:   http.StatusNotFound,
                         Detail:   &amp;detail,
@@ -989,7 +998,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 
         <span class="cov8" title="1">detail := "internal server error"
         return http.StatusInternalServerError, api.InternalError{
-                Type:     "about:blank",
+                Type:     typeConflict,
                 Title:    http.StatusText(http.StatusInternalServerError),
                 Status:   http.StatusInternalServerError,
                 Detail:   &amp;detail,
@@ -1035,7 +1044,7 @@ func NewHandler(db DbPinger) *Handler {
 
 // Health Liveness
 // (GET /health)
-func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
         <span class="cov0" title="0">resp := api.HealthResponse{
                 Status: api.Ok,
 </span>        }
@@ -1071,7 +1080,7 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
         <span class="cov0" title="0">return func(next http.Handler) http.Handler </span>{
                 <span class="cov0" title="0">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
                         <span class="cov0" title="0">start := time.Now()
-                        lrw := &amp;loggingResponseWriter{ResponseWriter: w, status: http.StatusOK}
+                        lrw := &amp;statusResponseWriter{ResponseWriter: w, status: http.StatusOK}
                         next.ServeHTTP(lrw, r)
 </span>
                         <span class="cov0" title="0">duration := time.Since(start)
@@ -1096,13 +1105,13 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
         }
 }
 
-type loggingResponseWriter struct {
+type statusResponseWriter struct {
         http.ResponseWriter
         status      int
         wroteHeader bool
 }
 
-func (lrw *loggingResponseWriter) WriteHeader(code int) {
+func (lrw *statusResponseWriter) WriteHeader(code int) {
         <span class="cov0" title="0">if !lrw.wroteHeader </span>{
                 <span class="cov0" title="0">lrw.status = code
                 lrw.wroteHeader = true
@@ -1110,7 +1119,7 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 </span>        }
 }
 
-func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
+func (lrw *statusResponseWriter) Write(b []byte) (int, error) {
         <span class="cov0" title="0">if !lrw.wroteHeader </span>{
                 <span class="cov0" title="0">lrw.WriteHeader(http.StatusOK)
 </span>        }
@@ -1119,6 +1128,89 @@ func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
 </pre>
 		
 		<pre class="file" id="file8" style="display: none">package middleware
+
+import (
+        "net/http"
+        "time"
+
+        "github.com/go-chi/chi/v5"
+        "go.opentelemetry.io/otel/attribute"
+        "go.opentelemetry.io/otel/metric"
+)
+
+func Metrics(meter metric.Meter) func(http.Handler) http.Handler {
+        <span class="cov0" title="0">durationHist, _ := meter.Float64Histogram(
+                "http.server.request.duration",
+                metric.WithUnit("s"),
+                metric.WithDescription("how long did the answer take"),
+        )
+</span>
+        <span class="cov0" title="0">activeReq, _ := meter.Int64UpDownCounter(
+                "http.server.active_requests",
+                metric.WithUnit("{request}"),
+                metric.WithDescription("how many requests are being processed right now"),
+        )
+</span>
+        <span class="cov0" title="0">return func(next http.Handler) http.Handler </span>{
+                <span class="cov0" title="0">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov0" title="0">routePattern := chi.RouteContext(r.Context()).RoutePattern()
+                        activeReq.Add(r.Context(), 1, metric.WithAttributes(
+                                attribute.String("http.request.method", r.Method),
+                                attribute.String("http.route", routePattern),
+                        ))
+                        start := time.Now()
+                        lrw := &amp;statusResponseWriter{ResponseWriter: w, status: http.StatusOK}
+                        next.ServeHTTP(lrw, r)
+</span>
+                        <span class="cov0" title="0">duration := time.Since(start).Seconds()
+                        durationHist.Record(r.Context(), duration, metric.WithAttributes(
+                                attribute.String("http.request.method", r.Method),
+                                attribute.String("http.route", routePattern),
+                                attribute.Int("http.response.status_code", lrw.status),
+                        ))
+</span>
+                        <span class="cov0" title="0">activeReq.Add(r.Context(), -1, metric.WithAttributes(
+                                attribute.String("http.request.method", r.Method),
+                                attribute.String("http.route", routePattern),
+                        ))
+</span>                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package middleware
+
+import (
+        "errors"
+        "log/slog"
+        "net/http"
+        "runtime/debug"
+
+        "github.com/adeladnagulov/TripGo/internal/http/domainerror"
+        "github.com/adeladnagulov/TripGo/internal/http/response"
+)
+
+func Recover(logger *slog.Logger) func(http.Handler) http.Handler {
+        <span class="cov0" title="0">return func(next http.Handler) http.Handler </span>{
+                <span class="cov0" title="0">return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span>{
+                        <span class="cov0" title="0">defer func() </span>{
+                                <span class="cov0" title="0">if err := recover(); err != nil </span>{
+                                        <span class="cov0" title="0">logger.ErrorContext(r.Context(), "panic recovered",
+                                                "error", err,
+                                                "stack", string(debug.Stack()),
+                                        )
+</span>
+                                        <span class="cov0" title="0">status, problem := domainerror.Problem(errors.New("internal server error"), r)
+                                        response.Problem(w, status, problem)
+</span>                                }
+                        }()
+                        <span class="cov0" title="0">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package middleware
 
 import (
         "net/http"
@@ -1138,7 +1230,7 @@ func Tracing() func(http.Handler) http.Handler {
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package response
+		<pre class="file" id="file11" style="display: none">package response
 
 import (
         "encoding/json"
@@ -1150,17 +1242,17 @@ import (
 func Json(w http.ResponseWriter, status int, data interface{}) {
         <span class="cov0" title="0">w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(status)
-        json.NewEncoder(w).Encode(data)
+        _ = json.NewEncoder(w).Encode(data)
 </span>}
 
 func Problem(w http.ResponseWriter, status int, problem api.Problem) {
         <span class="cov0" title="0">w.Header().Set("Content-Type", "application/problem+json")
         w.WriteHeader(status)
-        json.NewEncoder(w).Encode(problem)
+        _ = json.NewEncoder(w).Encode(problem)
 </span>}
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package server
+		<pre class="file" id="file12" style="display: none">package server
 
 import (
         "net/http"
@@ -1222,7 +1314,7 @@ func (s *Server) Ready(w http.ResponseWriter, r *http.Request) {
 </span>}
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package timeutil
+		<pre class="file" id="file13" style="display: none">package timeutil
 
 import "time"
 
@@ -1239,7 +1331,7 @@ func FormatTimePtr(t *time.Time) *time.Time {
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package create
+		<pre class="file" id="file14" style="display: none">package create
 
 import (
         "github.com/adeladnagulov/TripGo/api"
@@ -1273,7 +1365,7 @@ func toApi(t trip.Trip) api.Trip {
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package create
+		<pre class="file" id="file15" style="display: none">package create
 
 import (
         "encoding/json"
@@ -1297,7 +1389,7 @@ func NewHandler(uc tripUseCase) *Handler {
 
 // CreateTrip Создать поездку
 // (POST /api/v1/trips)
-func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
+func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, _ api.CreateTripParams) {
         <span class="cov8" title="1">var apiTripData api.TripData
         if err := json.NewDecoder(r.Body).Decode(&amp;apiTripData); err != nil </span>{
                 <span class="cov8" title="1">status, problem := domainerror.Problem(err, r)
@@ -1324,7 +1416,7 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package finish
+		<pre class="file" id="file16" style="display: none">package finish
 
 import (
         "github.com/adeladnagulov/TripGo/api"
@@ -1348,7 +1440,7 @@ func toApi(t trip.Trip) api.Trip {
 }
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package finish
+		<pre class="file" id="file17" style="display: none">package finish
 
 import (
         "errors"
@@ -1379,7 +1471,7 @@ func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.
                         response.Problem(w, status, problem)
                         return
 </span>                }
-                <span class="cov8" title="1">fmt.Println(err) //лог
+                <span class="cov8" title="1">fmt.Println(err) // лог
                 status, problem := domainerror.Problem(err, r)
                 response.Problem(w, status, problem)
                 return</span>
@@ -1389,7 +1481,7 @@ func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package get
+		<pre class="file" id="file18" style="display: none">package get
 
 import (
         "github.com/adeladnagulov/TripGo/api"
@@ -1413,7 +1505,7 @@ func toApi(t trip.Trip) api.Trip {
 }
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package get
+		<pre class="file" id="file19" style="display: none">package get
 
 import (
         "errors"
@@ -1444,7 +1536,7 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
                         response.Problem(w, status, problem)
                         return
 </span>                }
-                <span class="cov8" title="1">fmt.Println(err) //сделать лог
+                <span class="cov8" title="1">fmt.Println(err) // сделать лог
                 status, problem := domainerror.Problem(err, r)
                 response.Problem(w, status, problem)
                 return</span>
@@ -1454,15 +1546,16 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package postgres
+		<pre class="file" id="file20" style="display: none">package postgres
 
 import (
         "context"
         "fmt"
 
-        "github.com/adeladnagulov/TripGo/internal/config"
         "github.com/exaring/otelpgx"
         "github.com/jackc/pgx/v5/pgxpool"
+
+        "github.com/adeladnagulov/TripGo/internal/config"
 )
 
 type DB struct {
@@ -1474,8 +1567,8 @@ func NewDB(ctx context.Context, cfg *config.Config) (*DB, error) {
         if err != nil </span>{
                 <span class="cov0" title="0">return nil, fmt.Errorf("parse pgx config: %w", err)
 </span>        }
-        <span class="cov0" title="0">pgxCfg.MaxConns = int32(cfg.DatabaseMaxConns)
-        pgxCfg.MinConns = int32(cfg.DatabaseMinConns)
+        <span class="cov0" title="0">pgxCfg.MaxConns = int32(cfg.DatabaseMaxConns) //nolint:gosec
+        pgxCfg.MinConns = int32(cfg.DatabaseMinConns) //nolint:gosec
         pgxCfg.MaxConnLifetime = cfg.DatabaseMaxConnsLifetime
         pgxCfg.ConnConfig.ConnectTimeout = cfg.DatabaseConnectTimeout
         pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer()
@@ -1506,7 +1599,7 @@ func (db *DB) PingTrip(ctx context.Context) error {
 </span>}
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package txManager
+		<pre class="file" id="file21" style="display: none">package txManager
 
 import (
         "context"
@@ -1542,12 +1635,12 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 
         <span class="cov0" title="0">defer func() </span>{
                 <span class="cov0" title="0">if p := recover(); p != nil </span>{
-                        <span class="cov0" title="0">tx.Rollback(ctx)
+                        <span class="cov0" title="0">_ = tx.Rollback(ctx)
                         panic(p)</span>
                 } else <span class="cov0" title="0">if err != nil </span>{
-                        <span class="cov0" title="0">tx.Rollback(ctx)
+                        <span class="cov0" title="0">_ = tx.Rollback(ctx)
 </span>                } else {
-                        <span class="cov0" title="0">tx.Commit(ctx)
+                        <span class="cov0" title="0">_ = tx.Commit(ctx)
 </span>                }
         }()
 
@@ -1556,7 +1649,7 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 }
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package telemetry
+		<pre class="file" id="file22" style="display: none">package telemetry
 
 import (
         "context"
@@ -1612,26 +1705,33 @@ func (h *traceHandler) WithGroup(name string) slog.Handler {
 </span>}
 </pre>
 		
-		<pre class="file" id="file21" style="display: none">package telemetry
+		<pre class="file" id="file23" style="display: none">package telemetry
 
 import (
         "context"
         "log/slog"
         "net/url"
 
-        "github.com/adeladnagulov/TripGo/internal/config"
         "go.opentelemetry.io/otel"
+        "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
         "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+        "go.opentelemetry.io/otel/propagation"
+        "go.opentelemetry.io/otel/sdk/metric"
         "go.opentelemetry.io/otel/sdk/resource"
         "go.opentelemetry.io/otel/sdk/trace"
         semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+
+        "github.com/adeladnagulov/TripGo/internal/config"
 )
 
-type TracerProvider struct {
-        Provider *trace.TracerProvider
+type OTelProviders struct {
+        Tracer *trace.TracerProvider
+        Meter  *metric.MeterProvider
 }
 
-func NewTracer(ctx context.Context, cfg *config.Config) (*TracerProvider, error) {
+func NewOTel(ctx context.Context, cfg *config.Config) (*OTelProviders, error) {
+        <span class="cov0" title="0">p := &amp;OTelProviders{}
+</span>
         <span class="cov0" title="0">res, err := resource.New(ctx,
                 resource.WithFromEnv(),
                 resource.WithAttributes(
@@ -1651,31 +1751,50 @@ func NewTracer(ctx context.Context, cfg *config.Config) (*TracerProvider, error)
                 otlptracehttp.WithEndpoint(endpointHost),
                 otlptracehttp.WithInsecure(),
         )
-</span>
-        <span class="cov0" title="0">if err != nil </span>{
+        if err != nil </span>{
                 <span class="cov0" title="0">slog.Warn("trace exporter init failed, traces disabled", "error", err)
-                return &amp;TracerProvider{}, nil
+</span>        } else {
+                <span class="cov0" title="0">p.Tracer = trace.NewTracerProvider(
+                        trace.WithResource(res),
+                        trace.WithBatcher(traceExp),
+                        trace.WithSampler(trace.ParentBased(trace.AlwaysSample())),
+                )
+                otel.SetTracerProvider(p.Tracer)
 </span>        }
 
-        <span class="cov0" title="0">sampler := trace.ParentBased(trace.AlwaysSample())
-</span>
-        <span class="cov0" title="0">tp := trace.NewTracerProvider(
-                trace.WithResource(res),
-                trace.WithBatcher(traceExp),
-                trace.WithSampler(sampler),
+        <span class="cov0" title="0">metricExp, err := otlpmetrichttp.New(ctx,
+                otlpmetrichttp.WithEndpoint(endpointHost),
+                otlpmetrichttp.WithInsecure(),
         )
-        otel.SetTracerProvider(tp)
-        return &amp;TracerProvider{Provider: tp}, nil</span>
+        if err != nil </span>{
+                <span class="cov0" title="0">slog.Warn("metric exporter init failed", "error", err)
+</span>        } else {
+                <span class="cov0" title="0">p.Meter = metric.NewMeterProvider(
+                        metric.WithResource(res),
+                        metric.WithReader(metric.NewPeriodicReader(metricExp)),
+                )
+                otel.SetMeterProvider(p.Meter)
+</span>        }
+
+        <span class="cov0" title="0">otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+                propagation.TraceContext{},
+                propagation.Baggage{},
+        ))
+</span>
+        <span class="cov0" title="0">return p, nil</span>
 }
 
-func (tp *TracerProvider) Shutdown(ctx context.Context) {
-        <span class="cov0" title="0">if tp.Provider != nil </span>{
-                <span class="cov0" title="0">_ = tp.Provider.Shutdown(ctx)
+func (tp *OTelProviders) Shutdown(ctx context.Context) {
+        <span class="cov0" title="0">if tp.Tracer != nil </span>{
+                <span class="cov0" title="0">_ = tp.Tracer.Shutdown(ctx)
+</span>        }
+        <span class="cov0" title="0">if tp.Meter != nil </span>{
+                <span class="cov0" title="0">_ = tp.Meter.Shutdown(ctx)
 </span>        }
 }
 </pre>
 		
-		<pre class="file" id="file22" style="display: none">package trip
+		<pre class="file" id="file24" style="display: none">package trip
 
 import (
         "context"
@@ -1684,12 +1803,13 @@ import (
         "time"
 
         sq "github.com/Masterminds/squirrel"
-        "github.com/adeladnagulov/TripGo/internal/domain/trip"
-        txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
         "github.com/google/uuid"
         "github.com/jackc/pgx/v5"
         "github.com/jackc/pgx/v5/pgconn"
         "github.com/jackc/pgx/v5/pgxpool"
+
+        "github.com/adeladnagulov/TripGo/internal/domain/trip"
+        txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
 )
 
 type Repository struct {
@@ -1817,7 +1937,7 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 
         <span class="cov0" title="0">historyBulder := sq.Insert("trip_status_history").
                 Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-                Values(t.Id, oldStatus, t.Status, "trip finished", time.Now()). //В будующем, помменять "trip finished" если не только за конца поезди будет
+                Values(t.Id, oldStatus, t.Status, "trip finished", time.Now()). // В будующем, помменять "trip finished" если не только за конца поезди будет
                 PlaceholderFormat(sq.Dollar)
 </span>
         <span class="cov0" title="0">query, args, err = historyBulder.ToSql()
@@ -1878,7 +1998,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 }
 </pre>
 		
-		<pre class="file" id="file23" style="display: none">package create
+		<pre class="file" id="file25" style="display: none">package create
 
 import (
         "context"
@@ -1886,21 +2006,32 @@ import (
         "log/slog"
         "time"
 
-        "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/google/uuid"
+        "go.opentelemetry.io/otel/metric"
+
+        "github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type CreateUseCase struct {
-        repo   tripCreator
-        tm     txManager
-        logger *slog.Logger
+        repo         tripCreator
+        tm           txManager
+        logger       *slog.Logger
+        tripsCreated metric.Int64Counter
 }
 
-func NewCreateUseCase(repo tripCreator, tm txManager, logger *slog.Logger) *CreateUseCase {
+func NewCreateUseCase(repo tripCreator, tm txManager, logger *slog.Logger, meter metric.Meter) *CreateUseCase {
+        <span class="cov8" title="1">tripsCreated, err := meter.Int64Counter(
+                "tripgo.trips.created",
+                metric.WithDescription("created trips"),
+        )
+        if err != nil </span>{
+                <span class="cov0" title="0">logger.Error("failed to create trips_created metric", "error", err)
+</span>        }
         <span class="cov8" title="1">return &amp;CreateUseCase{
-                repo:   repo,
-                tm:     tm,
-                logger: logger,
+                repo:         repo,
+                tm:           tm,
+                logger:       logger,
+                tripsCreated: tripsCreated,
 </span>        }
 }
 
@@ -1926,7 +2057,8 @@ func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*tr
                 )
                 return nil, fmt.Errorf("create trip error: %w", err)
 </span>        }
-        <span class="cov8" title="1">s.logger.InfoContext(ctx, "trip created successfully",
+        <span class="cov8" title="1">s.tripsCreated.Add(ctx, 1)
+        s.logger.InfoContext(ctx, "trip created successfully",
                 "id", t.Id,
                 "driver_id", t.DriverId,
                 "user_id", t.UserId,
@@ -1936,7 +2068,7 @@ func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*tr
 }
 </pre>
 		
-		<pre class="file" id="file24" style="display: none">package finish
+		<pre class="file" id="file26" style="display: none">package finish
 
 import (
         "context"
@@ -1944,21 +2076,32 @@ import (
         "log/slog"
         "time"
 
-        "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/google/uuid"
+        "go.opentelemetry.io/otel/metric"
+
+        "github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type FinishUseCase struct {
-        repo   tripFinisher
-        tm     txManager
-        logger *slog.Logger
+        repo           tripFinisher
+        tm             txManager
+        logger         *slog.Logger
+        tripsComplited metric.Int64Counter
 }
 
-func NewFinishUseCase(repo tripFinisher, tm txManager, logger *slog.Logger) *FinishUseCase {
+func NewFinishUseCase(repo tripFinisher, tm txManager, logger *slog.Logger, meter metric.Meter) *FinishUseCase {
+        <span class="cov8" title="1">tripsComplited, err := meter.Int64Counter(
+                "tripgo.trips.complete",
+                metric.WithDescription("completed trips"),
+        )
+        if err != nil </span>{
+                <span class="cov0" title="0">logger.Error("failed to create trips_complited metric", "error", err)
+</span>        }
         <span class="cov8" title="1">return &amp;FinishUseCase{
-                repo:   repo,
-                tm:     tm,
-                logger: logger,
+                repo:           repo,
+                tm:             tm,
+                logger:         logger,
+                tripsComplited: tripsComplited,
 </span>        }
 }
 
@@ -1986,7 +2129,8 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
         <span class="cov8" title="1">if err != nil </span>{
                 <span class="cov8" title="1">return nil, err
 </span>        }
-        <span class="cov8" title="1">s.logger.WarnContext(ctx, "trip finished successfully",
+        <span class="cov8" title="1">s.tripsComplited.Add(ctx, 1)
+        s.logger.WarnContext(ctx, "trip finished successfully",
                 "id", finishTrip.Id,
                 "status", finishTrip.Status,
         )
@@ -1994,15 +2138,16 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
 }
 </pre>
 		
-		<pre class="file" id="file25" style="display: none">package get
+		<pre class="file" id="file27" style="display: none">package get
 
 import (
         "context"
         "fmt"
         "log/slog"
 
-        "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/google/uuid"
+
+        "github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type GetUseCase struct {
