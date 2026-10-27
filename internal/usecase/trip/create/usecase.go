@@ -8,19 +8,31 @@ import (
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/metric"
 )
 
 type CreateUseCase struct {
-	repo   tripCreator
-	tm     txManager
-	logger *slog.Logger
+	repo         tripCreator
+	tm           txManager
+	logger       *slog.Logger
+	meter        metric.Meter
+	tripsCreated metric.Int64Counter
 }
 
-func NewCreateUseCase(repo tripCreator, tm txManager, logger *slog.Logger) *CreateUseCase {
+func NewCreateUseCase(repo tripCreator, tm txManager, logger *slog.Logger, meter metric.Meter) *CreateUseCase {
+	tripsCreated, err := meter.Int64Counter(
+		"tripgo.trips.created",
+		metric.WithDescription("created trips"),
+	)
+	if err != nil {
+		logger.Error("failed to create trips_created metric", "error", err)
+	}
 	return &CreateUseCase{
-		repo:   repo,
-		tm:     tm,
-		logger: logger,
+		repo:         repo,
+		tm:           tm,
+		logger:       logger,
+		meter:        meter,
+		tripsCreated: tripsCreated,
 	}
 }
 
@@ -46,6 +58,7 @@ func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*tr
 		)
 		return nil, fmt.Errorf("create trip error: %w", err)
 	}
+	s.tripsCreated.Add(ctx, 1)
 	s.logger.InfoContext(ctx, "trip created successfully",
 		"id", t.Id,
 		"driver_id", t.DriverId,

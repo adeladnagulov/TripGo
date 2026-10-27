@@ -10,6 +10,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/mock/gomock"
 )
 
@@ -113,7 +114,7 @@ func TestFinishTrip(t *testing.T) {
 			mockRepo := NewMocktripFinisher(ctrl)
 			mockTx := NewMocktxManager(ctrl)
 			tt.setup(mockRepo, mockTx)
-			us := finish.NewFinishUseCase(mockRepo, mockTx, slog.Default())
+			us := finish.NewFinishUseCase(mockRepo, mockTx, slog.Default(), noop.NewMeterProvider().Meter("test"))
 
 			result, err := us.FinishTrip(ctx, uuid.New())
 			if err != nil {

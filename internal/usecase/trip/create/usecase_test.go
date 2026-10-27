@@ -9,6 +9,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/metric/noop"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -71,7 +72,7 @@ func TestCreateTrip(t *testing.T) {
 			mockRepo := NewMocktripCreator(ctrl)
 			mockTx := NewMocktxManager(ctrl)
 			tt.setup(mockRepo, mockTx)
-			us := create.NewCreateUseCase(mockRepo, mockTx, slog.Default())
+			us := create.NewCreateUseCase(mockRepo, mockTx, slog.Default(), noop.NewMeterProvider().Meter("test"))
 
 			result, err := us.CreateTrip(ctx, tt.input)
 			if err != nil {
