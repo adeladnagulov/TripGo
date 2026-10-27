@@ -34,12 +34,12 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 			panic(p)
 		} else if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		} else {
-			tx.Commit(ctx)
+			_ = tx.Commit(ctx)
 		}
 	}()
 

@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/adeladnagulov/TripGo/internal/config"
 	domain "github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/infra/postgres"
 	"github.com/adeladnagulov/TripGo/internal/repository/trip"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func setupTestDb(t *testing.T) (*postgres.DB, func()) {
@@ -57,8 +58,8 @@ func TestRepository_Integration(t *testing.T) {
 		assert.Equal(t, newTrip.Id, got.Id)
 
 		t.Cleanup(func() {
-			db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE trip_id = $1", tripId)
-			db.Pool.Exec(ctx, "DELETE FROM trips WHERE trip_id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE trip_id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE trip_id = $1", tripId)
 		})
 	})
 
@@ -109,8 +110,8 @@ func TestRepository_Integration(t *testing.T) {
 		require.Equal(t, 0, historyCount)
 
 		t.Cleanup(func() {
-			db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE id = $1", tripId)
-			db.Pool.Exec(ctx, "DELETE FROM trips WHERE id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id = $1", tripId)
 		})
 	})
 
@@ -148,8 +149,8 @@ func TestRepository_Integration(t *testing.T) {
 		assert.ErrorIs(t, err, domain.ErrTripCompleted)
 
 		t.Cleanup(func() {
-			db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE trip_id = $1", tripId)
-			db.Pool.Exec(ctx, "DELETE FROM trips WHERE trip_id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE trip_id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE trip_id = $1", tripId)
 		})
 	})
 

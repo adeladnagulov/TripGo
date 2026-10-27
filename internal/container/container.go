@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/config"
 	server "github.com/adeladnagulov/TripGo/internal/http"
@@ -24,7 +26,6 @@ import (
 	createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
-	"github.com/go-chi/chi/v5"
 )
 
 type Container struct {
@@ -47,7 +48,7 @@ func New(cfg *config.Config) (*Container, error) {
 
 	db, err := postgres.NewDB(connectCtx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load storage: %v", err)
+		return nil, fmt.Errorf("failed to load storage: %v", err)
 	}
 
 	tripRepo := trip.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)

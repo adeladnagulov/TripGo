@@ -29,7 +29,7 @@ func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.
 			response.Problem(w, status, problem)
 			return
 		}
-		fmt.Println(err) //лог
+		fmt.Println(err) // лог
 		status, problem := domainerror.Problem(err, r)
 		response.Problem(w, status, problem)
 		return

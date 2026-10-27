@@ -6,16 +6,16 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type FinishUseCase struct {
 	repo           tripFinisher
 	tm             txManager
 	logger         *slog.Logger
-	meter          metric.Meter
 	tripsComplited metric.Int64Counter
 }
 
@@ -31,7 +31,6 @@ func NewFinishUseCase(repo tripFinisher, tm txManager, logger *slog.Logger, mete
 		repo:           repo,
 		tm:             tm,
 		logger:         logger,
-		meter:          meter,
 		tripsComplited: tripsComplited,
 	}
 }

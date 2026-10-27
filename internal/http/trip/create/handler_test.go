@@ -8,18 +8,27 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
+
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/create"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	gomock "go.uber.org/mock/gomock"
 )
 
 func TestCreateTrip(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	bodyData := `{
+  "user_id": "5cb72c04-7650-45c9-a79b-bcdba0631e0c",
+  "driver_id": "8860b315-ec86-42eb-a17c-7c163d721ff5",
+  "start_point": { "latitude": 59.9398, "longitude": 30.3146 },
+  "end_point":   { "latitude": 59.9290, "longitude": 30.3626 },
+  "price": 1450
+}`
 	tests := []struct {
 		name       string
 		body       string
@@ -29,13 +38,7 @@ func TestCreateTrip(t *testing.T) {
 	}{
 		{
 			name: "success",
-			body: `{
-  "user_id": "5cb72c04-7650-45c9-a79b-bcdba0631e0c",
-  "driver_id": "8860b315-ec86-42eb-a17c-7c163d721ff5",
-  "start_point": { "latitude": 59.9398, "longitude": 30.3146 },
-  "end_point":   { "latitude": 59.9290, "longitude": 30.3626 },
-  "price": 1450
-}`,
+			body: bodyData,
 			setup: func(uc *MocktripUseCase) {
 				uc.EXPECT().
 					CreateTrip(gomock.Any(), gomock.Any()).
@@ -52,13 +55,7 @@ func TestCreateTrip(t *testing.T) {
 		},
 		{
 			name: "driver busy",
-			body: `{
-  "user_id": "5cb72c04-7650-45c9-a79b-bcdba0631e0c",
-  "driver_id": "8860b315-ec86-42eb-a17c-7c163d721ff5",
-  "start_point": { "latitude": 59.9398, "longitude": 30.3146 },
-  "end_point":   { "latitude": 59.9290, "longitude": 30.3626 },
-  "price": 1450
-}`,
+			body: bodyData,
 			setup: func(uc *MocktripUseCase) {
 				uc.EXPECT().
 					CreateTrip(gomock.Any(), gomock.Any()).
@@ -69,13 +66,7 @@ func TestCreateTrip(t *testing.T) {
 		},
 		{
 			name: "internal error",
-			body: `{
-  "user_id": "5cb72c04-7650-45c9-a79b-bcdba0631e0c",
-  "driver_id": "8860b315-ec86-42eb-a17c-7c163d721ff5",
-  "start_point": { "latitude": 59.9398, "longitude": 30.3146 },
-  "end_point":   { "latitude": 59.9290, "longitude": 30.3626 },
-  "price": 1450
-}`,
+			body: bodyData,
 			setup: func(uc *MocktripUseCase) {
 				uc.EXPECT().
 					CreateTrip(gomock.Any(), gomock.Any()).
@@ -101,7 +92,8 @@ func TestCreateTrip(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code)
 			if tt.wantCode != "" {
 				var problem api.Problem
-				json.NewDecoder(w.Body).Decode(&problem)
+				err := json.NewDecoder(w.Body).Decode(&problem)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantCode, problem.Code)
 			}
 		})

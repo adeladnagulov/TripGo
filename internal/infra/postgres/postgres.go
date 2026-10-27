@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/adeladnagulov/TripGo/internal/config"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/adeladnagulov/TripGo/internal/config"
 )
 
 type DB struct {
@@ -18,8 +19,8 @@ func NewDB(ctx context.Context, cfg *config.Config) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse pgx config: %w", err)
 	}
-	pgxCfg.MaxConns = int32(cfg.DatabaseMaxConns)
-	pgxCfg.MinConns = int32(cfg.DatabaseMinConns)
+	pgxCfg.MaxConns = int32(cfg.DatabaseMaxConns) //nolint:gosec
+	pgxCfg.MinConns = int32(cfg.DatabaseMinConns) //nolint:gosec
 	pgxCfg.MaxConnLifetime = cfg.DatabaseMaxConnsLifetime
 	pgxCfg.ConnConfig.ConnectTimeout = cfg.DatabaseConnectTimeout
 	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer()

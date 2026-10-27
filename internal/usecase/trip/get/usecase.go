@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type GetUseCase struct {

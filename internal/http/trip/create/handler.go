@@ -22,7 +22,7 @@ func NewHandler(uc tripUseCase) *Handler {
 
 // CreateTrip Создать поездку
 // (POST /api/v1/trips)
-func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
+func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, _ api.CreateTripParams) {
 	var apiTripData api.TripData
 	if err := json.NewDecoder(r.Body).Decode(&apiTripData); err != nil {
 		status, problem := domainerror.Problem(err, r)

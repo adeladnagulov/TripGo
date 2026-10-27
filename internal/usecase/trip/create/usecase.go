@@ -6,16 +6,16 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type CreateUseCase struct {
 	repo         tripCreator
 	tm           txManager
 	logger       *slog.Logger
-	meter        metric.Meter
 	tripsCreated metric.Int64Counter
 }
 
@@ -31,7 +31,6 @@ func NewCreateUseCase(repo tripCreator, tm txManager, logger *slog.Logger, meter
 		repo:         repo,
 		tm:           tm,
 		logger:       logger,
-		meter:        meter,
 		tripsCreated: tripsCreated,
 	}
 }

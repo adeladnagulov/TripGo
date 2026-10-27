@@ -6,14 +6,16 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestProblem(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/v1/trips/test", nil)
 	var dummyInt int
+	typeConflict := "about:blank"
 	unmarshalErr := json.Unmarshal([]byte(`"ошибка"`), &dummyInt)
 	tests := []struct {
 		name        string
@@ -32,7 +34,7 @@ func TestProblem(t *testing.T) {
 			err:        unmarshalErr,
 			wantStatus: http.StatusBadRequest,
 			wantProblem: api.BadRequest{
-				Type:     "about:blank",
+				Type:     typeConflict,
 				Title:    http.StatusText(http.StatusBadRequest),
 				Status:   http.StatusBadRequest,
 				Detail:   ptr("invalid request body or parameters"),
@@ -45,7 +47,7 @@ func TestProblem(t *testing.T) {
 			err:        trip.ErrDriverBusy,
 			wantStatus: http.StatusConflict,
 			wantProblem: api.CreateTripConflict{
-				Type:     "about:blank",
+				Type:     typeConflict,
 				Title:    http.StatusText(http.StatusConflict),
 				Status:   http.StatusConflict,
 				Detail:   ptr("driver already has active trip"),
@@ -58,7 +60,7 @@ func TestProblem(t *testing.T) {
 			err:        trip.ErrTripCompleted,
 			wantStatus: http.StatusConflict,
 			wantProblem: api.BadRequest{
-				Type:     "about:blank",
+				Type:     typeConflict,
 				Title:    http.StatusText(http.StatusConflict),
 				Status:   http.StatusConflict,
 				Detail:   ptr("trip is already over"),
@@ -71,7 +73,7 @@ func TestProblem(t *testing.T) {
 			err:        trip.ErrNotFound,
 			wantStatus: http.StatusNotFound,
 			wantProblem: api.BadRequest{
-				Type:     "about:blank",
+				Type:     typeConflict,
 				Title:    http.StatusText(http.StatusNotFound),
 				Status:   http.StatusNotFound,
 				Detail:   ptr("trip with an id does not exist"),
@@ -84,7 +86,7 @@ func TestProblem(t *testing.T) {
 			err:        errors.New("db error"),
 			wantStatus: http.StatusInternalServerError,
 			wantProblem: api.InternalError{
-				Type:     "about:blank",
+				Type:     typeConflict,
 				Title:    http.StatusText(http.StatusInternalServerError),
 				Status:   http.StatusInternalServerError,
 				Detail:   ptr("internal server error"),

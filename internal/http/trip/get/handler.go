@@ -29,7 +29,7 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 			response.Problem(w, status, problem)
 			return
 		}
-		fmt.Println(err) //сделать лог
+		fmt.Println(err) // сделать лог
 		status, problem := domainerror.Problem(err, r)
 		response.Problem(w, status, problem)
 		return

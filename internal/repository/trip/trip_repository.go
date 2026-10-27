@@ -7,12 +7,13 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
-	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
 )
 
 type Repository struct {
@@ -140,7 +141,7 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 
 	historyBulder := sq.Insert("trip_status_history").
 		Columns("trip_id", "from_status", "to_status", "reason", "changed_at").
-		Values(t.Id, oldStatus, t.Status, "trip finished", time.Now()). //В будующем, помменять "trip finished" если не только за конца поезди будет
+		Values(t.Id, oldStatus, t.Status, "trip finished", time.Now()). // В будующем, помменять "trip finished" если не только за конца поезди будет
 		PlaceholderFormat(sq.Dollar)
 
 	query, args, err = historyBulder.ToSql()
