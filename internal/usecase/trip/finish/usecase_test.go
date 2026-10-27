@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
-	"github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/mock/gomock"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	"github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 )
 
 func TestFinishTrip(t *testing.T) {

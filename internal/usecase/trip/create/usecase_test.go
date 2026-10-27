@@ -5,12 +5,13 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
-	"github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/metric/noop"
 	gomock "go.uber.org/mock/gomock"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	"github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 )
 
 func TestCreateTrip(t *testing.T) {

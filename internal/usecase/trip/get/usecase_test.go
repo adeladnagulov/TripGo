@@ -5,11 +5,12 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
-	"github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	"github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
 )
 
 func TestGetTrip(t *testing.T) {

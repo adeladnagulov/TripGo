@@ -10,6 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/config"
 	server "github.com/adeladnagulov/TripGo/internal/http"
@@ -25,9 +27,12 @@ import (
 	createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
+<<<<<<< HEAD
 	middleware "github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+=======
+>>>>>>> 92b2166 (ref: linter)
 )
 
 type Container struct {
@@ -50,7 +55,7 @@ func New(cfg *config.Config) (*Container, error) {
 
 	db, err := postgres.NewDB(connectCtx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load storage: %v", err)
+		return nil, fmt.Errorf("failed to load storage: %v", err)
 	}
 
 	tripRepo := trip.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
@@ -111,11 +116,7 @@ func (c *Container) Run() {
 	go func() {
 		log.Printf("Starting server on %s", c.srv.Addr)
 		if err := c.srv.ListenAndServe(); err != nil {
-<<<<<<< HEAD
 			srvErrCh <- err
-=======
-			log.Printf("Server error: %v", err)
->>>>>>> 370158b (feat: add trace)
 		}
 	}()
 

@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/url"
 
-	"github.com/adeladnagulov/TripGo/internal/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -14,6 +13,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+
+	"github.com/adeladnagulov/TripGo/internal/config"
 )
 
 type OTelProviders struct {

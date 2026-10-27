@@ -8,12 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
+
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/get"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	gomock "go.uber.org/mock/gomock"
 )
 
 func TestGetTrip(t *testing.T) {
@@ -73,7 +75,8 @@ func TestGetTrip(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, w.Code)
 			if tt.wantCode != "" {
 				var problem api.Problem
-				json.NewDecoder(w.Body).Decode(&problem)
+				err := json.NewDecoder(w.Body).Decode(&problem)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantCode, problem.Code)
 			}
 		})

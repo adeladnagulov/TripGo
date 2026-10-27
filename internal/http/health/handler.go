@@ -25,7 +25,7 @@ func NewHandler(db DbPinger) *Handler {
 
 // Health Liveness
 // (GET /health)
-func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 	resp := api.HealthResponse{
 		Status: api.Ok,
 	}

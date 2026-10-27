@@ -14,11 +14,12 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 		return http.StatusOK, api.Problem{}
 	}
 	host := r.URL.Host
+	typeConflict := "about:blank"
 	switch {
 	case isValidationError(err):
 		detail := "invalid request body or parameters"
 		return http.StatusBadRequest, api.BadRequest{
-			Type:     "about:blank",
+			Type:     typeConflict,
 			Title:    http.StatusText(http.StatusBadRequest),
 			Status:   http.StatusBadRequest,
 			Detail:   &detail,
@@ -28,7 +29,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 	case errors.Is(err, trip.ErrDriverBusy):
 		detail := "driver already has active trip"
 		return http.StatusConflict, api.CreateTripConflict{
-			Type:     "about:blank",
+			Type:     typeConflict,
 			Title:    http.StatusText(http.StatusConflict),
 			Status:   http.StatusConflict,
 			Detail:   &detail,
@@ -38,7 +39,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 	case errors.Is(err, trip.ErrTripCompleted):
 		detail := "trip is already over"
 		return http.StatusConflict, api.BadRequest{
-			Type:     "about:blank",
+			Type:     typeConflict,
 			Title:    http.StatusText(http.StatusConflict),
 			Status:   http.StatusConflict,
 			Detail:   &detail,
@@ -48,7 +49,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 	case errors.Is(err, trip.ErrNotFound):
 		detail := "trip with an id does not exist"
 		return http.StatusNotFound, api.BadRequest{
-			Type:     "about:blank",
+			Type:     typeConflict,
 			Title:    http.StatusText(http.StatusNotFound),
 			Status:   http.StatusNotFound,
 			Detail:   &detail,
@@ -59,7 +60,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 
 	detail := "internal server error"
 	return http.StatusInternalServerError, api.InternalError{
-		Type:     "about:blank",
+		Type:     typeConflict,
 		Title:    http.StatusText(http.StatusInternalServerError),
 		Status:   http.StatusInternalServerError,
 		Detail:   &detail,
