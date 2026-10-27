@@ -22,10 +22,10 @@ generate: ## Вся кодогенерация: OpenAPI, mocks, protobuf
 	$(GO) generate ./...
 
 build: ## Собрать исполняемый файл
-	$(GO) build -trimpath -o $(BINARY) ./cmd/trip-service
+	$(GO) build -trimpath -o $(BINARY) ./cmd/service
 
 run: ## Запустить сервис локально
-	$(GO) run ./cmd/trip-service
+	$(GO) run ./cmd/service
 
 migrate: ## Накатить миграции на базу данных
 	$(GO) tool goose -dir migrations postgres "$(DATABASE_URL)" up
@@ -33,11 +33,19 @@ migrate: ## Накатить миграции на базу данных
 migrate-down: ## Откатить последнюю миграцию
 	$(GO) tool goose -dir migrations postgres "$(DATABASE_URL)" down
 
-test: ## Запустить все тесты с race detector
+test-race: ## Запустить все тесты с race detector
 	$(GO) test -race ./...
 
+test: ## Запустить тесты и сформировать HTML-отчет покрытия
+	$(GO) test -coverprofile=coverage.out ./...
+	$(GO) tool cover -func=coverage.out
+	$(GO) tool cover -html=coverage.out -o coverage.html
+
+test-integration:
+	$(GO) test -tags=integration -race ./...
+
 lint: ## Запустить линтер
-	$(GO) tool golangci-lint run ./...
+	golangci-lint run ./...
 
 format: ## Отформатировать код
 	$(GO) fmt ./...

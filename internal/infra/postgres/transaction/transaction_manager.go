@@ -1,7 +1,8 @@
-package storage
+package txManager
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -9,11 +10,7 @@ import (
 
 type contextKey string
 
-const txKey contextKey = "transaction"
-
-type TxManager interface {
-	Do(ctx context.Context, fn func(ctx context.Context) error) error
-}
+const TxKey contextKey = "transaction"
 
 type TransactionManager struct {
 	pool *pgxpool.Pool
@@ -26,26 +23,26 @@ func NewTransactionManager(pool *pgxpool.Pool) *TransactionManager {
 }
 
 func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Context) error) (err error) {
-	if _, ok := ctx.Value(txKey).(pgx.Tx); ok {
+	if _, ok := ctx.Value(TxKey).(pgx.Tx); ok {
 		return fn(ctx)
 	}
 
 	tx, err := tm.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("starts a transaction: %w", err)
 	}
 
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 			panic(p)
 		} else if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		} else {
-			tx.Commit(ctx)
+			_ = tx.Commit(ctx)
 		}
 	}()
 
-	ctx = context.WithValue(ctx, txKey, tx)
+	ctx = context.WithValue(ctx, TxKey, tx)
 	return fn(ctx)
 }
