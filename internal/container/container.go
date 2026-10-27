@@ -46,6 +46,7 @@ func New(cfg *config.Config) (*Container, error) {
 		return nil, fmt.Errorf("failed to init tracer: %w", err)
 	}
 	logger := telemetry.NewLogger(config.ParseLodLevel(cfg.LogLevel))
+	meter := provider.Meter.Meter(cfg.OtelServiceName)
 
 	db, err := postgres.NewDB(connectCtx, cfg)
 	if err != nil {
@@ -55,8 +56,8 @@ func New(cfg *config.Config) (*Container, error) {
 	tripRepo := trip.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
 	tm := txManager.NewTransactionManager(db.Pool, cfg.DatabaseQueryTimeout)
 
-	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger)
-	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger)
+	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger, meter)
+	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger, meter)
 	getUc := getUsecase.NewGetUseCase(tripRepo, logger)
 
 	createH := create.NewHandler(createUc)
@@ -89,7 +90,7 @@ func New(cfg *config.Config) (*Container, error) {
 	logRouter := middleware.Logging(r)
 	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
-	r.Use(middleware.Metrics(provider.Meter.Meter(cfg.OtelServiceName)))
+	r.Use(middleware.Metrics(meter))
 
 	api.HandlerFromMux(si, r)
 	srv := &http.Server{
