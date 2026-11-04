@@ -10,12 +10,15 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type contextKey string
+
+const RoutePatternKey contextKey = "openapi_route_pattern"
+
 func Problem(err error, r *http.Request) (int, api.Problem) {
 	if err == nil {
 		return http.StatusOK, api.Problem{}
 	}
-	//host := r.URL.Path
-	host := chi.RouteContext(r.Context()).RoutePattern()
+	host := getRoutePattern(r)
 	typeConflict := "about:blank"
 	switch {
 	case isValidationError(err):
@@ -78,4 +81,16 @@ func isValidationError(err error) bool {
 		return true
 	}
 	return false
+}
+
+func getRoutePattern(r *http.Request) string {
+	if pattern, ok := r.Context().Value(RoutePatternKey).(string); ok && pattern != "" {
+		return pattern
+	}
+
+	if routeCtx := chi.RouteContext(r.Context()); routeCtx != nil {
+		return routeCtx.RoutePattern()
+	}
+
+	return r.URL.Path
 }

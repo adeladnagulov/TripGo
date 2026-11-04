@@ -29,7 +29,6 @@ import (
 	createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
-	oapiMiddleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
 type Container struct {
@@ -84,8 +83,11 @@ func New(cfg *config.Config) (*Container, error) {
 	swagger.Servers = nil
 
 	r := chi.NewRouter()
-	r.Use(oapiMiddleware.OapiRequestValidator(swagger))
-
+	openAPIRequestValidator, err := middleware.OpenAPIRequestValidator(swagger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init OpenAPI validator: %w", err)
+	}
+	r.Use(openAPIRequestValidator)
 	r.Use(middleware.Recover(logger))
 	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
@@ -95,7 +97,6 @@ func New(cfg *config.Config) (*Container, error) {
 		ErrorHandlerFunc: response.HandleAPIError,
 	})
 
-	api.HandlerFromMux(si, r)
 	srv := &http.Server{
 		Addr:              cfg.HttpAddr,
 		Handler:           r,
