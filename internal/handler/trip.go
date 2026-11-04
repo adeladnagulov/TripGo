@@ -23,7 +23,7 @@ func NewHandler(tripServise *usecase.TripServise) *Handler {
 }
 
 func (h *Handler) HandlerAPIError(w http.ResponseWriter, r *http.Request, err error) {
-	writeProblem(w, newBadRequest(r.URL.Host, err.Error()))
+	writeProblem(w, newBadRequest(r.URL.Path, err.Error()))
 }
 
 // CreateTrip Создать поездку
@@ -31,22 +31,22 @@ func (h *Handler) HandlerAPIError(w http.ResponseWriter, r *http.Request, err er
 func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
 	var tripData api.TripData
 	if err := json.NewDecoder(r.Body).Decode(&tripData); err != nil {
-		writeProblem(w, newBadRequest(r.URL.Host, "Invalid request body: "+err.Error()))
+		writeProblem(w, newBadRequest(r.URL.Path, "Invalid request body: "+err.Error()))
 		return
 	}
 	if tripData.DriverId == uuid.Nil {
-		writeProblem(w, newBadRequest(r.URL.Host, "driver_id cannot be a zero UUID"))
+		writeProblem(w, newBadRequest(r.URL.Path, "driver_id cannot be a zero UUID"))
 		return
 	}
 
 	trip, err := h.tripServise.CreateTrip(r.Context(), tripData)
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {
-			writeProblem(w, newCreateTripConflict(r.URL.Host, "driver already has active trip"))
+			writeProblem(w, newCreateTripConflict(r.URL.Path, "driver already has active trip"))
 			return
 		}
 		fmt.Println(err) //сделать лог
-		writeProblem(w, newInternalError(r.URL.Host, "internal error: "+err.Error()))
+		writeProblem(w, newInternalError(r.URL.Path, "internal error: "+err.Error()))
 		return
 	}
 
@@ -61,11 +61,11 @@ func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.Tri
 	trip, err := h.tripServise.GetTrip(r.Context(), tripId)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			writeProblem(w, newTripNotFound(r.URL.Host, "trip with an id does not exist"))
+			writeProblem(w, newTripNotFound(r.URL.Path, "trip with an id does not exist"))
 			return
 		}
 		fmt.Println(err) //сделать лог
-		writeProblem(w, newInternalError(r.URL.Host, "internal error: "+err.Error()))
+		writeProblem(w, newInternalError(r.URL.Path, "internal error: "+err.Error()))
 		return
 	}
 
@@ -78,11 +78,11 @@ func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.
 	trip, err := h.tripServise.FinishTrip(r.Context(), tripId)
 	if err != nil {
 		if errors.Is(err, domain.ErrCannotFinishTrip) {
-			writeProblem(w, newTripComplited(r.URL.Host, "trip is already over"))
+			writeProblem(w, newTripComplited(r.URL.Path, "trip is already over"))
 			return
 		}
 		fmt.Println(err) //лог
-		writeProblem(w, newInternalError(r.URL.Host, "internal error: "+err.Error()))
+		writeProblem(w, newInternalError(r.URL.Path, "internal error: "+err.Error()))
 		return
 	}
 
