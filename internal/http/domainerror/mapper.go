@@ -13,7 +13,7 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 	if err == nil {
 		return http.StatusOK, api.Problem{}
 	}
-	host := r.URL.Host
+	host := r.URL.Path
 	typeConflict := "about:blank"
 	switch {
 	case isValidationError(err):

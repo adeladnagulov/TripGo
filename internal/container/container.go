@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/adeladnagulov/TripGo/api"
@@ -17,6 +18,7 @@ import (
 	server "github.com/adeladnagulov/TripGo/internal/http"
 	"github.com/adeladnagulov/TripGo/internal/http/health"
 	"github.com/adeladnagulov/TripGo/internal/http/middleware"
+	"github.com/adeladnagulov/TripGo/internal/http/response"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/create"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/finish"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/get"
@@ -27,12 +29,7 @@ import (
 	createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
-<<<<<<< HEAD
-	middleware "github.com/deepmap/oapi-codegen/pkg/middleware"
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/go-chi/chi/v5"
-=======
->>>>>>> 92b2166 (ref: linter)
+	oapiMiddleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
 type Container struct {
@@ -87,16 +84,16 @@ func New(cfg *config.Config) (*Container, error) {
 	swagger.Servers = nil
 
 	r := chi.NewRouter()
-	r.Use(middleware.OapiRequestValidator(swagger))
-	api.HandlerWithOptions(si, api.ChiServerOptions{
-		BaseRouter:       r,
-		ErrorHandlerFunc: si.HandlerAPIError,
-	})
-	logRouter := middleware.Logging(r)
+	r.Use(oapiMiddleware.OapiRequestValidator(swagger))
+
 	r.Use(middleware.Recover(logger))
 	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
 	r.Use(middleware.Metrics(meter))
+	api.HandlerWithOptions(si, api.ChiServerOptions{
+		BaseRouter:       r,
+		ErrorHandlerFunc: response.HandleAPIError,
+	})
 
 	api.HandlerFromMux(si, r)
 	srv := &http.Server{
