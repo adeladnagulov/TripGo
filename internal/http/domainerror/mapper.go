@@ -7,13 +7,15 @@ import (
 
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	"github.com/go-chi/chi/v5"
 )
 
 func Problem(err error, r *http.Request) (int, api.Problem) {
 	if err == nil {
 		return http.StatusOK, api.Problem{}
 	}
-	host := r.URL.Path
+	//host := r.URL.Path
+	host := chi.RouteContext(r.Context()).RoutePattern()
 	typeConflict := "about:blank"
 	switch {
 	case isValidationError(err):
