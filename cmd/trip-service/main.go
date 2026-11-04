@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -31,7 +32,7 @@ func main() { //убрать в init()
 	defer db.Close()
 
 	tripRepo := storage.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
-	tm := storage.NewTransactionManager(db.Pool)
+	tm := storage.NewTransactionManager(db.Pool, cfg.DatabaseQueryTimeout)
 	tripService := usecase.NewTripService(tripRepo, tm)
 
 	si := handler.NewHandler(tripService)
@@ -48,24 +49,31 @@ func main() { //убрать в init()
 		IdleTimeout:       cfg.HttpIdleTimeout,
 	}
 
+	srvErrCh := make(chan error, 1)
 	go func() {
 		log.Printf("Starting server on %s", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("Server error: %v", err)
+			srvErrCh <- err
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 
-	log.Println("shutting down gracefully")
+	select {
+	case <-quit:
+		log.Println("shutting down gracefully")
+	case err := <-srvErrCh:
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("server failed to start or crashed: %v", err)
+		}
+	}
 
 	shotdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(shotdownCtx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		log.Printf("Server forced to shutdown: %v", err)
 	}
 	log.Println("Server exited gracefully")
 }
