@@ -3,10 +3,7 @@ BINARY ?= bin/trip-service
 
 # Читаем переменные из .env файла
 include .env
-export DATABASE_URL
-export HTTP_ADDR
-export LOG_LEVEL
-export SHUTDOWN_TIMEOUT
+export $(shell grep -v '^#' .env | cut -d= -f1)
 
 .PHONY: install generate build run migrate migrate-down test lint help
 

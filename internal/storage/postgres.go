@@ -26,7 +26,7 @@ func NewDB(ctx context.Context, cfg *config.Config) (*DB, error) {
 		return nil, err
 	}
 
-	pingCtx, pingCancel := context.WithTimeout(context.Background(), cfg.DatabaseConnectTimeout)
+	pingCtx, pingCancel := context.WithTimeout(ctx, cfg.DatabaseConnectTimeout)
 	defer pingCancel()
 	if err = pool.Ping(pingCtx); err != nil {
 		pool.Close()

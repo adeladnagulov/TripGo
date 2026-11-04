@@ -9,6 +9,7 @@ import (
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain"
 	"github.com/adeladnagulov/TripGo/internal/usecase"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -21,6 +22,10 @@ func NewHandler(tripServise *usecase.TripServise) *Handler {
 	}
 }
 
+func (h *Handler) HandlerAPIError(w http.ResponseWriter, r *http.Request, err error) {
+	writeProblem(w, newBadRequest(r.URL.Host, err.Error()))
+}
+
 // CreateTrip Создать поездку
 // (POST /api/v1/trips)
 func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
@@ -29,6 +34,11 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.
 		writeProblem(w, newBadRequest(r.URL.Host, "Invalid request body: "+err.Error()))
 		return
 	}
+	if tripData.DriverId == uuid.Nil {
+		writeProblem(w, newBadRequest(r.URL.Host, "driver_id cannot be a zero UUID"))
+		return
+	}
+
 	trip, err := h.tripServise.CreateTrip(r.Context(), tripData)
 	if err != nil {
 		if errors.Is(err, domain.ErrConflict) {
@@ -100,7 +110,10 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 // (GET /ready)
 func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
 	if err := h.tripServise.PingTrip(r.Context()); err != nil {
-		writeProblem(w, newInternalError(r.URL.Host, "db not respond :"+err.Error()))
+		resp := api.HealthResponse{
+			Status: api.Unavailable,
+		}
+		writeJson(w, http.StatusServiceUnavailable, resp)
 		return
 	}
 	resp := api.HealthResponse{

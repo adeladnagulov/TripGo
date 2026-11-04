@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"log"
 	"net/http"
@@ -14,7 +15,9 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/handler"
 	"github.com/adeladnagulov/TripGo/internal/storage"
 	"github.com/adeladnagulov/TripGo/internal/usecase"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	middleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
 func main() { //убрать в init()
@@ -37,9 +40,27 @@ func main() { //убрать в init()
 
 	si := handler.NewHandler(tripService)
 
-	r := chi.NewRouter()
+	specPath := "contracts/openapi/trip-service.openapi.yaml"
+	specData, err := os.ReadFile(specPath)
+	if err != nil {
+		log.Fatalf("Failed to read openapi spec from %s: %v", specPath, err)
+	}
+	loader := openapi3.NewLoader()
+	swagger, err := loader.LoadFromData(specData)
+	if err != nil {
+		log.Fatalf("Failed to load swagger spec: %v", err)
+	}
+	if err := swagger.Validate(loader.Context); err != nil {
+		log.Fatalf("Swagger spec is invalid: %v", err)
+	}
+	swagger.Servers = nil
 
-	api.HandlerFromMux(si, r)
+	r := chi.NewRouter()
+	r.Use(middleware.OapiRequestValidator(swagger))
+	api.HandlerWithOptions(si, api.ChiServerOptions{
+		BaseRouter:       r,
+		ErrorHandlerFunc: si.HandlerAPIError,
+	})
 	srv := &http.Server{
 		Addr:              cfg.HttpAddr,
 		Handler:           r,

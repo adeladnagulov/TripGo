@@ -119,7 +119,7 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 		Suffix(`RETURNING "id", "user_id", "driver_id",
 			"start_latitude", "start_longitude", "end_latitude", "end_longitude",
 			"price", "status",
-			"started_at", "finished_at", "updated_at"`)
+			"started_at", "finished_at"`)
 
 	query, args, err := tripBulder.ToSql()
 	if err != nil {
@@ -130,10 +130,26 @@ func (r *tripRepository) Finish(ctx context.Context, id uuid.UUID, finishedAt ti
 		&trip.Id, &trip.UserId, &trip.DriverId,
 		&trip.StartPoint.Latitude, &trip.StartPoint.Longitude, &trip.EndPoint.Latitude, &trip.EndPoint.Longitude,
 		&trip.Price, &trip.Status,
-		&trip.StartedAt, &trip.FinishedAt, &trip.LastPositionAt,
+		&trip.StartedAt, &trip.FinishedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			checkBuilder := sq.Select("status").
+				From("trips").
+				Where(sq.Eq{"id": id}).
+				PlaceholderFormat(sq.Dollar)
+			query, args, err := checkBuilder.ToSql()
+			if err != nil {
+				return nil, err
+			}
+			var currectStatus string
+			err = dbExc.QueryRow(queryCtx, query, args...).Scan(&currectStatus)
+			if err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					return nil, domain.ErrNotFound
+				}
+				return nil, err
+			}
 			return nil, domain.ErrCannotFinishTrip
 		}
 		return nil, err
