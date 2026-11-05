@@ -4,6 +4,7 @@ package trip_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -67,10 +68,11 @@ func TestRepository_Integration(t *testing.T) {
 	t.Run("check atomicity: rollback on history insert failure", func(t *testing.T) {
 		tripId, driverId := uuid.New(), uuid.New()
 
-		_, err := db.Pool.Exec(ctx, `
-			ALTER TABLE trip_status_history
-			ADD CONSTRAINT checker_rollback_test CHECK (false)
-		`)
+		constraintSQL := fmt.Sprintf(
+			"ALTER TABLE trip_status_history ADD CONSTRAINT checker_rollback_test CHECK (trip_id != '%s')",
+			tripId.String(),
+		)
+		_, err := db.Pool.Exec(ctx, constraintSQL)
 		require.NoError(t, err, "failed to add a temporary constraint")
 
 		t.Cleanup(func() {
@@ -99,7 +101,7 @@ func TestRepository_Integration(t *testing.T) {
 		err = db.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM trip_status_history WHERE trip_id = $1", tripId).
 			Scan(&historyCount)
 		require.NoError(t, err)
-		require.Equal(t, 1, historyCount)
+		require.Equal(t, 0, historyCount)
 
 		var tripCount int
 		err = db.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM trips WHERE id = $1", tripId).

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -10,12 +9,6 @@ import (
 )
 
 func Metrics(meter metric.Meter) func(http.Handler) http.Handler {
-	durationHist, _ := meter.Float64Histogram(
-		"http.server.request.duration",
-		metric.WithUnit("s"),
-		metric.WithDescription("how long did the answer take"),
-	)
-
 	activeReq, _ := meter.Int64UpDownCounter(
 		"http.server.active_requests",
 		metric.WithUnit("{request}"),
@@ -29,21 +22,18 @@ func Metrics(meter metric.Meter) func(http.Handler) http.Handler {
 				attribute.String("http.request.method", r.Method),
 				attribute.String("http.route", routePattern),
 			))
-			start := time.Now()
+
+			defer func() {
+				if p := recover(); p != nil {
+					panic(p)
+				}
+				activeReq.Add(r.Context(), -1, metric.WithAttributes(
+					attribute.String("http.request.method", r.Method),
+					attribute.String("http.route", routePattern),
+				))
+			}()
 			lrw := &statusResponseWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(lrw, r)
-
-			duration := time.Since(start).Seconds()
-			durationHist.Record(r.Context(), duration, metric.WithAttributes(
-				attribute.String("http.request.method", r.Method),
-				attribute.String("http.route", routePattern),
-				attribute.Int("http.response.status_code", lrw.status),
-			))
-
-			activeReq.Add(r.Context(), -1, metric.WithAttributes(
-				attribute.String("http.request.method", r.Method),
-				attribute.String("http.route", routePattern),
-			))
 		})
 	}
 }

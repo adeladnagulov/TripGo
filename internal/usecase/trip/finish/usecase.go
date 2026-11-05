@@ -21,7 +21,7 @@ type FinishUseCase struct {
 
 func NewFinishUseCase(repo tripFinisher, tm txManager, logger *slog.Logger, meter metric.Meter) *FinishUseCase {
 	tripsComplited, err := meter.Int64Counter(
-		"tripgo.trips.complete",
+		"tripgo.trips.comleted",
 		metric.WithDescription("completed trips"),
 	)
 	if err != nil {

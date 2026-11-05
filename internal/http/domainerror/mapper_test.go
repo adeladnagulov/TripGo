@@ -1,7 +1,6 @@
 package domainerror
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -10,13 +9,12 @@ import (
 
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	"github.com/adeladnagulov/TripGo/internal/http/helper/decode"
 )
 
 func TestProblem(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/v1/trips/test", nil)
-	var dummyInt int
 	typeConflict := "about:blank"
-	unmarshalErr := json.Unmarshal([]byte(`"ошибка"`), &dummyInt)
 	tests := []struct {
 		name        string
 		err         error
@@ -31,7 +29,7 @@ func TestProblem(t *testing.T) {
 		},
 		{
 			name:       "invalid request",
-			err:        unmarshalErr,
+			err:        decode.NewVlidationErr(errors.New("test_error")),
 			wantStatus: http.StatusBadRequest,
 			wantProblem: api.BadRequest{
 				Type:     typeConflict,
@@ -39,7 +37,7 @@ func TestProblem(t *testing.T) {
 				Status:   http.StatusBadRequest,
 				Detail:   ptr("invalid request body or parameters"),
 				Code:     "invalid_request",
-				Instance: &req.URL.Host,
+				Instance: ptr("/api/v1/trips/test"),
 			},
 		},
 		{
@@ -52,7 +50,7 @@ func TestProblem(t *testing.T) {
 				Status:   http.StatusConflict,
 				Detail:   ptr("driver already has active trip"),
 				Code:     "driver_busy",
-				Instance: &req.URL.Host,
+				Instance: ptr("/api/v1/trips/test"),
 			},
 		},
 		{
@@ -65,7 +63,7 @@ func TestProblem(t *testing.T) {
 				Status:   http.StatusConflict,
 				Detail:   ptr("trip is already over"),
 				Code:     "trip_completed",
-				Instance: &req.URL.Host,
+				Instance: ptr("/api/v1/trips/test"),
 			},
 		},
 		{
@@ -78,7 +76,7 @@ func TestProblem(t *testing.T) {
 				Status:   http.StatusNotFound,
 				Detail:   ptr("trip with an id does not exist"),
 				Code:     "trip_not_found",
-				Instance: &req.URL.Host,
+				Instance: ptr("/api/v1/trips/test"),
 			},
 		},
 		{
@@ -91,7 +89,7 @@ func TestProblem(t *testing.T) {
 				Status:   http.StatusInternalServerError,
 				Detail:   ptr("internal server error"),
 				Code:     "internal_error",
-				Instance: &req.URL.Host,
+				Instance: ptr("/api/v1/trips/test"),
 			},
 		},
 	}

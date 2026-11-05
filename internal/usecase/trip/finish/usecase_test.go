@@ -30,7 +30,7 @@ func TestFinishTrip(t *testing.T) {
 			name: "success",
 			setup: func(repo *MocktripFinisher, tx *MocktxManager) {
 				repo.EXPECT().
-					GetByID(gomock.Any(), gomock.Any()).
+					GetByIDForUpdate(gomock.Any(), gomock.Any()).
 					Return(&trip.Trip{
 						Id:         uuid.New(),
 						DriverId:   uuid.New(),
@@ -50,6 +50,18 @@ func TestFinishTrip(t *testing.T) {
 				repo.EXPECT().
 					Save(gomock.Any(), gomock.Any()).
 					Return(nil)
+				repo.EXPECT().
+					GetByID(gomock.Any(), gomock.Any()).
+					Return(&trip.Trip{
+						Id:         uuid.New(),
+						DriverId:   uuid.New(),
+						UserId:     uuid.New(),
+						StartPoint: trip.Coordinates{Lat: 12.12, Lon: 12.12},
+						EndPoint:   trip.Coordinates{Lat: 13.13, Lon: 13.13},
+						Price:      67,
+						Status:     trip.Completed,
+						StartedAt:  time.Now(),
+					}, nil)
 			},
 			wantStatus: trip.Completed,
 			wantErr:    nil,
@@ -57,8 +69,13 @@ func TestFinishTrip(t *testing.T) {
 		{
 			name: "trip not found",
 			setup: func(repo *MocktripFinisher, tx *MocktxManager) {
+				tx.EXPECT().
+					Do(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, fn func(ctx context.Context) error) error {
+						return fn(ctx)
+					})
 				repo.EXPECT().
-					GetByID(gomock.Any(), gomock.Any()).
+					GetByIDForUpdate(gomock.Any(), gomock.Any()).
 					Return(nil, trip.ErrNotFound)
 			},
 			wantErr: trip.ErrNotFound,
@@ -66,8 +83,13 @@ func TestFinishTrip(t *testing.T) {
 		{
 			name: "trip has already been completed",
 			setup: func(repo *MocktripFinisher, tx *MocktxManager) {
+				tx.EXPECT().
+					Do(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, fn func(ctx context.Context) error) error {
+						return fn(ctx)
+					})
 				repo.EXPECT().
-					GetByID(gomock.Any(), gomock.Any()).
+					GetByIDForUpdate(gomock.Any(), gomock.Any()).
 					Return(&trip.Trip{
 						Id:         uuid.New(),
 						DriverId:   uuid.New(),
@@ -86,7 +108,7 @@ func TestFinishTrip(t *testing.T) {
 			name: "failed save trip",
 			setup: func(repo *MocktripFinisher, tx *MocktxManager) {
 				repo.EXPECT().
-					GetByID(gomock.Any(), gomock.Any()).
+					GetByIDForUpdate(gomock.Any(), gomock.Any()).
 					Return(&trip.Trip{
 						Id:         uuid.New(),
 						DriverId:   uuid.New(),

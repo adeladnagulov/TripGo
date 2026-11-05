@@ -70,15 +70,15 @@ func New(cfg *config.Config) (*Container, error) {
 	specPath := "contracts/openapi/trip-service.openapi.yaml"
 	specData, err := os.ReadFile(specPath)
 	if err != nil {
-		log.Fatalf("Failed to read openapi spec from %s: %v", specPath, err)
+		log.Printf("Failed to read openapi spec from %s: %v", specPath, err)
 	}
 	loader := openapi3.NewLoader()
 	swagger, err := loader.LoadFromData(specData)
 	if err != nil {
-		log.Fatalf("Failed to load swagger spec: %v", err)
+		log.Printf("Failed to load swagger spec: %v", err)
 	}
 	if err := swagger.Validate(loader.Context); err != nil {
-		log.Fatalf("Swagger spec is invalid: %v", err)
+		log.Printf("Swagger spec is invalid: %v", err)
 	}
 	swagger.Servers = nil
 
@@ -89,11 +89,13 @@ func New(cfg *config.Config) (*Container, error) {
 	}
 	r.Use(openAPIRequestValidator)
 	r.Use(middleware.Recover(logger))
-	r.Use(middleware.Tracing())
 	r.Use(middleware.Logging(logger))
-	r.Use(middleware.Metrics(meter))
 	api.HandlerWithOptions(si, api.ChiServerOptions{
-		BaseRouter:       r,
+		BaseRouter: r,
+		Middlewares: []api.MiddlewareFunc{
+			api.MiddlewareFunc(middleware.Tracing()),
+			api.MiddlewareFunc(middleware.Metrics(meter)),
+		},
 		ErrorHandlerFunc: response.HandleAPIError,
 	})
 

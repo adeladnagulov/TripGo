@@ -41,7 +41,7 @@ func (tm *TransactionManager) Do(ctx context.Context, fn func(ctx context.Contex
 	defer func() {
 		if p := recover(); p != nil {
 			rbCtx, rbCancel := context.WithTimeout(context.WithoutCancel(ctx), tm.opTimeout)
-			tx.Rollback(rbCtx)
+			_ = tx.Rollback(rbCtx)
 			rbCancel()
 			panic(p)
 		} else if err != nil {

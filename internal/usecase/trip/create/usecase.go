@@ -52,6 +52,7 @@ func (s *CreateUseCase) CreateTrip(ctx context.Context, data trip.TripData) (*tr
 	})
 	if err != nil {
 		s.logger.WarnContext(ctx, "create trip error",
+			slog.Any("error", err),
 			"id", t.Id,
 			"driver_id", t.DriverId,
 		)

@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/adeladnagulov/TripGo/internal/config"
-
 	"github.com/adeladnagulov/TripGo/internal/container"
 )
 

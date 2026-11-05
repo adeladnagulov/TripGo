@@ -4,11 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/go-chi/chi/v5"
+
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/helper/decode"
-	"github.com/getkin/kin-openapi/openapi3filter"
-	"github.com/go-chi/chi/v5"
 )
 
 type contextKey string
@@ -88,11 +89,7 @@ func isValidationError(err error) bool {
 		return true
 	}
 	var paramErr *api.InvalidParamFormatError
-	if errors.As(err, &paramErr) {
-		return true
-	}
-
-	return false
+	return errors.As(err, &paramErr)
 }
 
 func getRoutePattern(r *http.Request) string {

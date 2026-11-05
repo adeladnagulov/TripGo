@@ -11,6 +11,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
@@ -52,6 +55,7 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
+	span := trace.SpanFromContext(queryCtx)
 
 	tripBuilder := sq.Insert("trips").
 		Columns(
@@ -72,8 +76,16 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 	if err != nil {
 		return fmt.Errorf("builde trip query: %w", err)
 	}
+
+	span.SetAttributes(
+		attribute.String("db.operation.name", "INSERT"),
+		attribute.String("db.collection.name", "trips"),
+	)
+
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return trip.ErrDriverBusy
@@ -90,8 +102,16 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 	if err != nil {
 		return fmt.Errorf("builde trip_status_history query: %w", err)
 	}
+
+	span.SetAttributes(
+		attribute.String("db.operation.name", "INSERT"),
+		attribute.String("db.collection.name", "trip_status_history"),
+	)
+
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("failed exec trip_status_history: %w", err)
 	}
 
@@ -103,6 +123,7 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
+	span := trace.SpanFromContext(queryCtx)
 
 	oldBulder := sq.Select("status").
 		From("trips").
@@ -112,9 +133,17 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 	if err != nil {
 		return fmt.Errorf("builde old_trip query: %w", err)
 	}
+
+	span.SetAttributes(
+		attribute.String("db.operation.name", "SELECT"),
+		attribute.String("db.collection.name", "trips"),
+	)
+
 	var oldStatus string
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(&oldStatus)
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, pgx.ErrNoRows) {
 			return trip.ErrNotFound
 		}
@@ -131,8 +160,16 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 	if err != nil {
 		return fmt.Errorf("builde trip query: %w", err)
 	}
+
+	span.SetAttributes(
+		attribute.String("db.operation.name", "UPDATE"),
+		attribute.String("db.collection.name", "trips"),
+	)
+
 	tag, err := dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("failed exec trips: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
@@ -148,8 +185,16 @@ func (r *Repository) Save(ctx context.Context, t *trip.Trip) error {
 	if err != nil {
 		return fmt.Errorf("builde trip_status_history query: %w", err)
 	}
+
+	span.SetAttributes(
+		attribute.String("db.operation.name", "INSERT"),
+		attribute.String("db.collection.name", "trip_status_history"),
+	)
+
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("failed exec trip_status_history: %w", err)
 	}
 
@@ -161,6 +206,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
+	span := trace.SpanFromContext(queryCtx)
 
 	tripBulder := sq.Select(
 		"id", "user_id", "driver_id",
@@ -177,6 +223,11 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 		return nil, fmt.Errorf("builde trip query: %w", err)
 	}
 
+	span.SetAttributes(
+		attribute.String("db.operation.name", "SELECT"),
+		attribute.String("db.collection.name", "trips"),
+	)
+
 	t := trip.Trip{}
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
 		&t.Id,
@@ -192,6 +243,8 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 		&t.FinishedAt,
 	)
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		if err == pgx.ErrNoRows {
 			return nil, trip.ErrNotFound
 		}
@@ -206,6 +259,7 @@ func (r *Repository) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
+	span := trace.SpanFromContext(queryCtx)
 
 	tripBulder := sq.Select(
 		"id", "user_id", "driver_id",
@@ -223,6 +277,11 @@ func (r *Repository) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.
 		return nil, fmt.Errorf("builde trip query: %w", err)
 	}
 
+	span.SetAttributes(
+		attribute.String("db.operation.name", "SELECT"),
+		attribute.String("db.collection.name", "trips"),
+	)
+
 	t := trip.Trip{}
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
 		&t.Id,
@@ -238,6 +297,8 @@ func (r *Repository) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.
 		&t.FinishedAt,
 	)
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		if err == pgx.ErrNoRows {
 			return nil, trip.ErrNotFound
 		}
