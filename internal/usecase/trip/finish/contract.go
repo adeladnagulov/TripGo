@@ -13,6 +13,7 @@ import (
 type tripFinisher interface {
 	Save(ctx context.Context, t *trip.Trip) error
 	GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, error)
+	GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.Trip, error)
 }
 
 type txManager interface {

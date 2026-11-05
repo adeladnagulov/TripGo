@@ -57,6 +57,21 @@ func (mr *MocktripFinisherMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MocktripFinisher)(nil).GetByID), ctx, id)
 }
 
+// GetByIDForUpdate mocks base method.
+func (m *MocktripFinisher) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByIDForUpdate", ctx, id)
+	ret0, _ := ret[0].(*trip.Trip)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByIDForUpdate indicates an expected call of GetByIDForUpdate.
+func (mr *MocktripFinisherMockRecorder) GetByIDForUpdate(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIDForUpdate", reflect.TypeOf((*MocktripFinisher)(nil).GetByIDForUpdate), ctx, id)
+}
+
 // Save mocks base method.
 func (m *MocktripFinisher) Save(ctx context.Context, t *trip.Trip) error {
 	m.ctrl.T.Helper()

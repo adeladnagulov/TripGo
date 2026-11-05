@@ -36,21 +36,21 @@ func NewFinishUseCase(repo tripFinisher, tm txManager, logger *slog.Logger, mete
 }
 
 func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
-	finishTrip, err := s.repo.GetByID(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("get finish trip id=%v error: %w", id, err)
-	}
+	err := s.tm.Do(ctx, func(ctx context.Context) error {
+		finishTrip, err := s.repo.GetByIDForUpdate(ctx, id)
+		if err != nil {
+			return fmt.Errorf("get finish trip id=%v error: %w", id, err)
+		}
 
-	err = finishTrip.Finish(time.Now())
-	if err != nil {
-		s.logger.WarnContext(ctx, "trip already complited",
-			"id", finishTrip.Id,
-		)
-		return nil, err
-	}
+		err = finishTrip.Finish(time.Now())
+		if err != nil {
+			s.logger.WarnContext(ctx, "trip already complited",
+				"id", finishTrip.Id,
+			)
+			return err
+		}
 
-	err = s.tm.Do(ctx, func(ctx context.Context) error {
-		err := s.repo.Save(ctx, finishTrip)
+		err = s.repo.Save(ctx, finishTrip)
 		if err != nil {
 			return fmt.Errorf("save finish trip id=%v error: %w", id, err)
 		}
@@ -58,6 +58,11 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	finishTrip, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("get finish trip id=%v error: %w", id, err)
 	}
 	s.tripsComplited.Add(ctx, 1)
 	s.logger.WarnContext(ctx, "trip finished successfully",

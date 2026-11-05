@@ -200,3 +200,49 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 
 	return &t, nil
 }
+
+func (r *Repository) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.Trip, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	dbExc := getDbExecutor(queryCtx, r.pool)
+
+	tripBulder := sq.Select(
+		"id", "user_id", "driver_id",
+		"start_latitude", "start_longitude", "end_latitude", "end_longitude",
+		"price", "status",
+		"started_at", "finished_at",
+	).
+		From("trips").
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		Suffix("FOR UPDATE")
+
+	query, args, err := tripBulder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("builde trip query: %w", err)
+	}
+
+	t := trip.Trip{}
+	err = dbExc.QueryRow(queryCtx, query, args...).Scan(
+		&t.Id,
+		&t.UserId,
+		&t.DriverId,
+		&t.StartPoint.Lat,
+		&t.StartPoint.Lon,
+		&t.EndPoint.Lat,
+		&t.EndPoint.Lon,
+		&t.Price,
+		&t.Status,
+		&t.StartedAt,
+		&t.FinishedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, trip.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed QueryRow trip: %w", err)
+	}
+
+	return &t, nil
+}
