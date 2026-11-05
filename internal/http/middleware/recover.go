@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/adeladnagulov/TripGo/internal/http/domainerror"
-	"github.com/adeladnagulov/TripGo/internal/http/response"
+	"github.com/adeladnagulov/TripGo/internal/http/helper/response"
 )
 
 func Recover(logger *slog.Logger) func(http.Handler) http.Handler {

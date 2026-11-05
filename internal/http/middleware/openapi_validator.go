@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/adeladnagulov/TripGo/internal/http/domainerror"
-	"github.com/adeladnagulov/TripGo/internal/http/response"
+	"github.com/adeladnagulov/TripGo/internal/http/helper/response"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/getkin/kin-openapi/routers/gorillamux"

@@ -1,12 +1,13 @@
 package domainerror
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	"github.com/adeladnagulov/TripGo/internal/http/helper/decode"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -75,11 +76,22 @@ func Problem(err error, r *http.Request) (int, api.Problem) {
 }
 
 func isValidationError(err error) bool {
-	var syntaxErr *json.SyntaxError
-	var unmarshalErr *json.UnmarshalTypeError
-	if errors.As(err, &syntaxErr) || errors.As(err, &unmarshalErr) {
+	if err == nil {
+		return false
+	}
+	var validateErr *decode.ValidationErr
+	if errors.As(err, &validateErr) {
 		return true
 	}
+	var reqErr *openapi3filter.RequestError
+	if errors.As(err, &reqErr) {
+		return true
+	}
+	var paramErr *api.InvalidParamFormatError
+	if errors.As(err, &paramErr) {
+		return true
+	}
+
 	return false
 }
 

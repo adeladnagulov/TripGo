@@ -8,7 +8,7 @@ import (
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/domainerror"
-	"github.com/adeladnagulov/TripGo/internal/http/response"
+	"github.com/adeladnagulov/TripGo/internal/http/helper/response"
 )
 
 type Handler struct {

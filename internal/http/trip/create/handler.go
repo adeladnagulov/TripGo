@@ -1,7 +1,6 @@
 package create
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,7 +8,8 @@ import (
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/domainerror"
-	"github.com/adeladnagulov/TripGo/internal/http/response"
+	"github.com/adeladnagulov/TripGo/internal/http/helper/decode"
+	"github.com/adeladnagulov/TripGo/internal/http/helper/response"
 )
 
 type Handler struct {
@@ -24,7 +24,7 @@ func NewHandler(uc tripUseCase) *Handler {
 // (POST /api/v1/trips)
 func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, _ api.CreateTripParams) {
 	var apiTripData api.TripData
-	if err := json.NewDecoder(r.Body).Decode(&apiTripData); err != nil {
+	if err := decode.DecodeJSON(r, &apiTripData); err != nil {
 		status, problem := domainerror.Problem(err, r)
 		response.Problem(w, status, problem)
 		return
