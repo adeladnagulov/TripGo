@@ -14,6 +14,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/config"
 	domain "github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/infra/postgres"
+	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
 	"github.com/adeladnagulov/TripGo/internal/repository/trip"
 )
 
@@ -23,7 +24,6 @@ func setupTestDb(t *testing.T) (*postgres.DB, func()) {
 	require.NoError(t, err, "failed get config")
 	db, err := postgres.NewDB(context.Background(), cfg)
 	require.NoError(t, err, "failed to connect to DB")
-
 	cleanup := func() {
 		db.Close()
 	}
@@ -36,6 +36,7 @@ func TestRepository_Integration(t *testing.T) {
 
 	repo := trip.NewTripRepository(db.Pool, 5*time.Second)
 	ctx := context.Background()
+	tm := txManager.NewTransactionManager(db.Pool, 5*time.Minute)
 
 	t.Run("create and get trip success", func(t *testing.T) {
 		tripId, driverId := uuid.New(), uuid.New()
@@ -59,14 +60,27 @@ func TestRepository_Integration(t *testing.T) {
 
 		t.Cleanup(func() {
 			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE trip_id = $1", tripId)
-			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE trip_id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id = $1", tripId)
 		})
 	})
 
-	t.Run("create trip with busy driver AND check atomicity", func(t *testing.T) {
+	t.Run("check atomicity: rollback on history insert failure", func(t *testing.T) {
 		tripId, driverId := uuid.New(), uuid.New()
-		trip1 := &domain.Trip{
-			Id:         uuid.New(),
+
+		_, err := db.Pool.Exec(ctx, `
+			ALTER TABLE trip_status_history
+			ADD CONSTRAINT checker_rollback_test CHECK (false)
+		`)
+		require.NoError(t, err, "failed to add a temporary constraint")
+
+		t.Cleanup(func() {
+			_, _ = db.Pool.Exec(ctx, `ALTER TABLE trip_status_history DROP CONSTRAINT IF EXISTS checker_rollback_test`)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE trip_id = $1", tripId)
+		})
+
+		trip := &domain.Trip{
+			Id:         tripId,
 			DriverId:   driverId,
 			UserId:     uuid.New(),
 			StartPoint: domain.Coordinates{Lat: 12.12, Lon: 12.12},
@@ -76,43 +90,22 @@ func TestRepository_Integration(t *testing.T) {
 			Status:     domain.Active,
 		}
 
-		err := repo.Create(ctx, trip1)
-		require.NoError(t, err)
+		err = tm.Do(ctx, func(ctx context.Context) error {
+			return repo.Create(ctx, trip)
+		})
+		require.Error(t, err)
 
 		var historyCount int
-		err = db.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM trip_status_history WHERE trip_id = $1", trip1.Id).
+		err = db.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM trip_status_history WHERE trip_id = $1", tripId).
 			Scan(&historyCount)
 		require.NoError(t, err)
 		require.Equal(t, 1, historyCount)
 
-		trip2 := &domain.Trip{
-			Id:         uuid.New(),
-			DriverId:   driverId,
-			UserId:     uuid.New(),
-			StartPoint: domain.Coordinates{Lat: 12.12, Lon: 12.12},
-			EndPoint:   domain.Coordinates{Lat: 13.13, Lon: 13.13},
-			StartedAt:  time.Now(),
-			Price:      1000,
-			Status:     domain.Active,
-		}
-		err = repo.Create(ctx, trip2)
-		assert.ErrorIs(t, err, domain.ErrDriverBusy)
-
 		var tripCount int
-		err = db.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM trips WHERE id = $1", trip2.Id).
+		err = db.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM trips WHERE id = $1", tripId).
 			Scan(&tripCount)
 		require.NoError(t, err)
 		require.Equal(t, 0, tripCount)
-
-		err = db.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM trip_status_history WHERE trip_id = $1", trip2.Id).
-			Scan(&historyCount)
-		require.NoError(t, err)
-		require.Equal(t, 0, historyCount)
-
-		t.Cleanup(func() {
-			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE id = $1", tripId)
-			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id = $1", tripId)
-		})
 	})
 
 	t.Run("successful completion and repetition", func(t *testing.T) {
@@ -150,7 +143,7 @@ func TestRepository_Integration(t *testing.T) {
 
 		t.Cleanup(func() {
 			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_status_history WHERE trip_id = $1", tripId)
-			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE trip_id = $1", tripId)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id = $1", tripId)
 		})
 	})
 
