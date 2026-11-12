@@ -15,10 +15,10 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 			lrw := &statusResponseWriter{ResponseWriter: w, status: http.StatusOK}
 
 			defer func() {
+				var recoveredPanic any
 				if p := recover(); p != nil {
+					recoveredPanic = p
 					lrw.status = http.StatusInternalServerError
-					logger.ErrorContext(r.Context(), "panic recovered in logging middleware", slog.Any("error", p))
-					panic(p)
 				}
 				duration := time.Since(start)
 				level := slog.LevelInfo
@@ -38,6 +38,9 @@ func Logging(logger *slog.Logger) func(http.Handler) http.Handler {
 					slog.Int("status", lrw.status),
 					slog.Int64("duration_ms", duration.Milliseconds()),
 				)
+				if recoveredPanic != nil {
+					panic(recoveredPanic)
+				}
 			}()
 			next.ServeHTTP(lrw, r)
 		})
