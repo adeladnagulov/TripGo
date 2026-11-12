@@ -1,8 +1,26 @@
-# Локальные файлы окружения: создаются tripgoctl, у каждого свои
+.git
+.gitignore
+
 .env
+.env.local
 .tripgo/
+environment.toml
 
-# Сборка
 bin/
+*.test
+coverage.out
+coverage.html
+*.out
 
-.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+*.md
+docs/
+README.md
+
+Dockerfile*
+docker-compose*
+.dockerignore
