@@ -261,7 +261,7 @@ func (r *Repository) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.
 	dbExc := getDbExecutor(queryCtx, r.pool)
 	span := trace.SpanFromContext(queryCtx)
 
-	tripBulder := sq.Select(
+	tripBuilder := sq.Select(
 		"id", "user_id", "driver_id",
 		"start_latitude", "start_longitude", "end_latitude", "end_longitude",
 		"price", "status",
@@ -272,7 +272,7 @@ func (r *Repository) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.
 		PlaceholderFormat(sq.Dollar).
 		Suffix("FOR UPDATE")
 
-	query, args, err := tripBulder.ToSql()
+	query, args, err := tripBuilder.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("builde trip query: %w", err)
 	}
@@ -306,4 +306,64 @@ func (r *Repository) GetByIDForUpdate(ctx context.Context, id uuid.UUID) (*trip.
 	}
 
 	return &t, nil
+}
+
+func (r *Repository) SavePosition(ctx context.Context, pos trip.TripPosition) (int64, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	dbExc := getDbExecutor(queryCtx, r.pool)
+	//span := trace.SpanFromContext(queryCtx)
+	tripBuilder := sq.Select("status").
+		From("trips").
+		Where(sq.Eq{"id": pos.TripId}).
+		PlaceholderFormat(sq.Dollar)
+
+	query, args, err := tripBuilder.ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("builde trip query: %w", err)
+	}
+	var status string
+	err = dbExc.QueryRow(queryCtx, query, args...).Scan(&status)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return 0, trip.ErrNotFound
+		}
+		return 0, fmt.Errorf("failed QueryRow trip: %w", err)
+	}
+	if status != string(trip.Active) {
+		return 0, trip.ErrTripCompleted
+	}
+
+	positionsBuilder := sq.Insert("trip_positions").
+		Columns("trip_id", "latitude", "longitude", "recorded_at").
+		Values(pos.TripId, pos.Coordinates.Lat, pos.Coordinates.Lon, pos.RecordedAt).
+		Suffix("RETURNING id").
+		PlaceholderFormat(sq.Dollar)
+	query, args, err = positionsBuilder.ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("builde positions query: %w", err)
+	}
+	var posId int64
+	err = dbExc.QueryRow(queryCtx, query, args...).Scan(&posId)
+	if err != nil {
+		return 0, fmt.Errorf("failed insert position: %w", err)
+	}
+
+	lastPosBuilder := sq.Update("trips").
+		Set("last_position_at", sq.Expr(
+			"GREATEST(COALESCE(last_position_at, '1970-01-01 00:00:00+00'::timestamptz), ?)",
+			pos.RecordedAt,
+		)).
+		Where(sq.Eq{"id": pos.TripId}).
+		PlaceholderFormat(sq.Dollar)
+	query, args, err = lastPosBuilder.ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("builde last positions query: %w", err)
+	}
+	_, err = dbExc.Exec(queryCtx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("failed update last position: %w", err)
+	}
+	return posId, nil
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/http/trip/create"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/finish"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/get"
+	createposition "github.com/adeladnagulov/TripGo/internal/http/trip/save_position"
 	"github.com/adeladnagulov/TripGo/internal/infra/postgres"
 	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
 	"github.com/adeladnagulov/TripGo/internal/infra/telemetry"
@@ -29,6 +30,7 @@ import (
 	createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
+	savePositionUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/save_position"
 )
 
 type Container struct {
@@ -60,12 +62,14 @@ func New(cfg *config.Config) (*Container, error) {
 	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger, meter)
 	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger, meter)
 	getUc := getUsecase.NewGetUseCase(tripRepo, logger)
+	savePosUc := savePositionUsecase.NewSavePositionUseCase(tripRepo, tm, logger)
 
 	createH := create.NewHandler(createUc)
 	finishH := finish.NewHandler(finishUc)
 	getH := get.NewHandler(getUc)
 	healthH := health.NewHandler(db.Pool)
-	si := server.NewServerInterface(getH, createH, finishH, healthH)
+	createPosH := createposition.NewHandler(savePosUc)
+	si := server.NewServerInterface(getH, createH, finishH, healthH, createPosH)
 
 	specPath := "contracts/openapi/trip-service.openapi.yaml"
 	specData, err := os.ReadFile(specPath)
