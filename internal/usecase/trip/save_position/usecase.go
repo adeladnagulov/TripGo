@@ -47,5 +47,10 @@ func (s *SavePositionUseCase) SavePosition(ctx context.Context, tripId uuid.UUID
 		)
 		return nil, fmt.Errorf("save position error: %w", err)
 	}
+	s.logger.InfoContext(ctx, "save position successfully",
+		"id", pos.Id,
+		"trip_id", pos.TripId,
+		"recorded_at", pos.RecordedAt,
+	)
 	return &pos, nil
 }
