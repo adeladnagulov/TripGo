@@ -63,3 +63,8 @@ type TripPosition struct {
 type TripPositionsResponse struct {
 	Positions []TripPosition
 }
+
+type StaleTrip struct {
+	Id       uuid.UUID
+	DriverId uuid.UUID
+}

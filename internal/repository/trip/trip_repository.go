@@ -399,5 +399,48 @@ func (r *Repository) GetPositions(ctx context.Context, tripId uuid.UUID) ([]trip
 		}
 		positions = append(positions, pos)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("get positions rows: %w", err)
+	}
 	return positions, nil
+}
+
+func (r *Repository) GetStaleTrips(ctx context.Context, staleAfter time.Duration) ([]trip.StaleTrip, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	dbExc := getDbExecutor(queryCtx, r.pool)
+	staleBuilder := sq.Select(
+		"id", "driver_id").
+		From("trips").
+		Where(sq.Eq{"status": trip.Active}).
+		Where(sq.Expr(
+			"COALESCE(last_position_at, started_at) < ?",
+			time.Now().UTC().Add(-staleAfter),
+		)).
+		OrderBy("COALESCE(last_position_at, started_at)").
+		PlaceholderFormat(sq.Dollar)
+
+	query, args, err := staleBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("builde stale trips query: %w", err)
+	}
+	rows, err := dbExc.Query(queryCtx, query, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed execute get stale trips query: %w", err)
+	}
+	defer rows.Close()
+	var staleTrips []trip.StaleTrip
+	for rows.Next() {
+		var staleTrip trip.StaleTrip
+		err = rows.Scan(&staleTrip)
+		if err != nil {
+			return nil, fmt.Errorf("scan stale trip error: %w", err)
+		}
+		staleTrips = append(staleTrips, staleTrip)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate stale trips rows: %w", err)
+	}
+	return staleTrips, nil
 }
