@@ -22,6 +22,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/http/trip/create"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/finish"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/get"
+	getpositions "github.com/adeladnagulov/TripGo/internal/http/trip/get_positions"
 	createposition "github.com/adeladnagulov/TripGo/internal/http/trip/save_position"
 	"github.com/adeladnagulov/TripGo/internal/infra/postgres"
 	txManager "github.com/adeladnagulov/TripGo/internal/infra/postgres/transaction"
@@ -30,6 +31,7 @@ import (
 	createUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/create"
 	finishUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/finish"
 	getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
+	getPositionsUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get_positions"
 	savePositionUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/save_position"
 )
 
@@ -63,13 +65,15 @@ func New(cfg *config.Config) (*Container, error) {
 	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger, meter)
 	getUc := getUsecase.NewGetUseCase(tripRepo, logger)
 	savePosUc := savePositionUsecase.NewSavePositionUseCase(tripRepo, tm, logger)
+	getPossUc := getPositionsUsecase.NewGetUseCase(tripRepo, logger)
 
 	createH := create.NewHandler(createUc)
 	finishH := finish.NewHandler(finishUc)
 	getH := get.NewHandler(getUc)
 	healthH := health.NewHandler(db.Pool)
 	createPosH := createposition.NewHandler(savePosUc)
-	si := server.NewServerInterface(getH, createH, finishH, healthH, createPosH)
+	getPossH := getpositions.NewHandler(getPossUc)
+	si := server.NewServerInterface(getH, createH, finishH, healthH, createPosH, getPossH)
 
 	specPath := "contracts/openapi/trip-service.openapi.yaml"
 	specData, err := os.ReadFile(specPath)

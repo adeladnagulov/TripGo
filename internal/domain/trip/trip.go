@@ -59,3 +59,7 @@ type TripPosition struct {
 	Coordinates Coordinates
 	RecordedAt  time.Time
 }
+
+type TripPositionsResponse struct {
+	Positions []TripPosition
+}

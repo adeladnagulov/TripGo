@@ -8,6 +8,7 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/http/trip/create"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/finish"
 	"github.com/adeladnagulov/TripGo/internal/http/trip/get"
+	getpositions "github.com/adeladnagulov/TripGo/internal/http/trip/get_positions"
 	createposition "github.com/adeladnagulov/TripGo/internal/http/trip/save_position"
 )
 
@@ -17,6 +18,7 @@ type Server struct {
 	finishHandler    *finish.Handler
 	healthHandler    *health.Handler
 	createPosHandler *createposition.Handler
+	getPosHandler    *getpositions.Handler
 }
 
 func NewServerInterface(
@@ -25,6 +27,7 @@ func NewServerInterface(
 	finishHandler *finish.Handler,
 	healthHandler *health.Handler,
 	createPosHandler *createposition.Handler,
+	getPosHandler *getpositions.Handler,
 ) *Server {
 	return &Server{
 		getHandler:       getHandler,
@@ -32,6 +35,7 @@ func NewServerInterface(
 		finishHandler:    finishHandler,
 		healthHandler:    healthHandler,
 		createPosHandler: createPosHandler,
+		getPosHandler:    getPosHandler,
 	}
 }
 
@@ -48,7 +52,7 @@ func (s *Server) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.T
 }
 
 func (s *Server) ListTripPositions(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	s.getPosHandler.ListTripPositions(w, r, tripId)
 }
 
 func (s *Server) CreateTripPosition(w http.ResponseWriter, r *http.Request, tripId api.TripId) {

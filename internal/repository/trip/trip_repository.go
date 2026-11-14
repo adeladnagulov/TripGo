@@ -34,6 +34,7 @@ func NewTripRepository(pool *pgxpool.Pool, queryTimeout time.Duration) *Reposito
 type dbExecutor interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
 func getDbExecutor(ctx context.Context, pool *pgxpool.Pool) dbExecutor {
@@ -342,7 +343,7 @@ func (r *Repository) SavePosition(ctx context.Context, pos trip.TripPosition) (i
 		PlaceholderFormat(sq.Dollar)
 	query, args, err = positionsBuilder.ToSql()
 	if err != nil {
-		return 0, fmt.Errorf("builde positions query: %w", err)
+		return 0, fmt.Errorf("builde position query: %w", err)
 	}
 	var posId int64
 	err = dbExc.QueryRow(queryCtx, query, args...).Scan(&posId)
@@ -359,11 +360,44 @@ func (r *Repository) SavePosition(ctx context.Context, pos trip.TripPosition) (i
 		PlaceholderFormat(sq.Dollar)
 	query, args, err = lastPosBuilder.ToSql()
 	if err != nil {
-		return 0, fmt.Errorf("builde last positions query: %w", err)
+		return 0, fmt.Errorf("builde last position query: %w", err)
 	}
 	_, err = dbExc.Exec(queryCtx, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("failed update last position: %w", err)
 	}
 	return posId, nil
+}
+
+func (r *Repository) GetPositions(ctx context.Context, tripId uuid.UUID) ([]trip.TripPosition, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	dbExc := getDbExecutor(queryCtx, r.pool)
+	//span := trace.SpanFromContext(queryCtx)
+	positionsBuilder := sq.Select(
+		"id, trip_id, latitude, longitude, recorded_at").
+		From("trip_positions").
+		Where(sq.Eq{"trip_id": tripId}).
+		OrderBy("recorded_at", "id").
+		PlaceholderFormat(sq.Dollar)
+	query, args, err := positionsBuilder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("builde positions query: %w", err)
+	}
+	rows, err := dbExc.Query(queryCtx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed select positions: %w", err)
+	}
+	defer rows.Close()
+	var positions []trip.TripPosition
+	for rows.Next() {
+		var pos trip.TripPosition
+		err = rows.Scan(&pos.Id, &pos.TripId, &pos.Coordinates.Lat, &pos.Coordinates.Lon, &pos.RecordedAt)
+		if err != nil {
+			return nil, fmt.Errorf("scan position error: %w", err)
+		}
+		positions = append(positions, pos)
+	}
+	return positions, nil
 }
