@@ -57,15 +57,23 @@ func (s *FinishUseCase) FinishTrip(ctx context.Context, id uuid.UUID) (*trip.Tri
 		return nil
 	})
 	if err != nil {
+		s.logger.WarnContext(ctx, "finished trip error",
+			slog.String("error", err.Error()),
+			"id", id,
+		)
 		return nil, err
 	}
 
 	finishTrip, err := s.repo.GetByID(ctx, id)
 	if err != nil {
+		s.logger.ErrorContext(ctx, "get finish trip error",
+			slog.String("error", err.Error()),
+			"id", id,
+		)
 		return nil, fmt.Errorf("get finish trip id=%v error: %w", id, err)
 	}
 	s.tripsComplited.Add(ctx, 1)
-	s.logger.WarnContext(ctx, "trip finished successfully",
+	s.logger.InfoContext(ctx, "trip finished successfully",
 		"id", finishTrip.Id,
 		"status", finishTrip.Status,
 	)
