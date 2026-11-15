@@ -64,6 +64,15 @@ func New(cfg *config.Config) (*Container, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed create scanMeter: %v", err)
 	}
+	var wp *workerpool.WorkerPool
+	poolMetrics, err := metrics.NewPoolMetrics(
+		meter,
+		func() int { return wp.GetQueueSize() },
+		func() int64 { return wp.GetActiveWorkers() },
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed create poolMetrics: %v", err)
+	}
 
 	db, err := postgres.NewDB(connectCtx, cfg)
 	if err != nil {
@@ -75,7 +84,7 @@ func New(cfg *config.Config) (*Container, error) {
 
 	inQueue := currentlyinqueue.NewInQueue()
 	gateWay := push.NewGateway(cfg.PushHTTPURL, cfg.PushRequestTimeout)
-	wp := workerpool.NewWorkerPool(cfg.PositionQueueSize, inQueue, gateWay, cfg.PushRequestTimeout, cfg.PositionWorkers, logger)
+	wp = workerpool.NewWorkerPool(cfg.PositionQueueSize, inQueue, gateWay, cfg.PushRequestTimeout, cfg.PositionWorkers, logger, poolMetrics)
 	tick := ticker.NewRealTicker(cfg.PositionCheckInterval)
 	scan := scanner.NewScanner(cfg.PositionCheckInterval, cfg.PositionStaleAfter, tripRepo, wp, inQueue, tick, logger, scanMeter)
 
