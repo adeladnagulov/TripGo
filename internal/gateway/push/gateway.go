@@ -13,13 +13,13 @@ import (
 	"github.com/google/uuid"
 )
 
-type Gateawy struct {
+type Gateway struct {
 	client  *http.Client
 	baseURL string
 }
 
-func NewGateway(baseURl string, timeout time.Duration) *Gateawy {
-	return &Gateawy{
+func NewGateway(baseURl string, timeout time.Duration) *Gateway {
+	return &Gateway{
 		baseURL: baseURl,
 		client: &http.Client{
 			Timeout: timeout,
@@ -27,7 +27,7 @@ func NewGateway(baseURl string, timeout time.Duration) *Gateawy {
 	}
 }
 
-func (g *Gateawy) ReuestPosition(ctx context.Context, tripId, driverId uuid.UUID) error {
+func (g *Gateway) ReuestPosition(ctx context.Context, tripId, driverId uuid.UUID) error {
 	reqBody := pushapi.PushRequest{
 		RecipientId: driverId,
 		RequestId:   uuid.NewString(),
