@@ -35,6 +35,7 @@ import (
 	getPositionsUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get_positions"
 	savePositionUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/save_position"
 	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
+	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 	"github.com/adeladnagulov/TripGo/internal/worker/positions/scanner"
 	"github.com/adeladnagulov/TripGo/internal/worker/positions/ticker"
 	workerpool "github.com/adeladnagulov/TripGo/internal/worker/positions/worker_pool"
@@ -59,6 +60,10 @@ func New(cfg *config.Config) (*Container, error) {
 	}
 	logger := telemetry.NewLogger(config.ParseLodLevel(cfg.LogLevel))
 	meter := provider.Meter.Meter(cfg.OtelServiceName)
+	scanMeter, err := metrics.NewScannerMetrics(meter)
+	if err != nil {
+		return nil, fmt.Errorf("failed create scanMeter: %v", err)
+	}
 
 	db, err := postgres.NewDB(connectCtx, cfg)
 	if err != nil {
@@ -72,12 +77,12 @@ func New(cfg *config.Config) (*Container, error) {
 	gateWay := push.NewGateway(cfg.PushHTTPURL, cfg.PushRequestTimeout)
 	wp := workerpool.NewWorkerPool(cfg.PositionQueueSize, inQueue, gateWay, cfg.PushRequestTimeout, cfg.PositionWorkers, logger)
 	tick := ticker.NewRealTicker(cfg.PositionCheckInterval)
-	scan := scanner.NewScanner(cfg.PositionCheckInterval, cfg.PositionStaleAfter, tripRepo, wp, inQueue, tick, logger)
+	scan := scanner.NewScanner(cfg.PositionCheckInterval, cfg.PositionStaleAfter, tripRepo, wp, inQueue, tick, logger, scanMeter)
 
 	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger, meter)
 	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger, meter)
 	getUc := getUsecase.NewGetUseCase(tripRepo, logger)
-	savePosUc := savePositionUsecase.NewSavePositionUseCase(tripRepo, tm, logger, inQueue)
+	savePosUc := savePositionUsecase.NewSavePositionUseCase(tripRepo, tm, logger, inQueue, meter)
 	getPossUc := getPositionsUsecase.NewGetUseCase(tripRepo, logger)
 
 	createH := create.NewHandler(createUc)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
+	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 	workerpool "github.com/adeladnagulov/TripGo/internal/worker/positions/worker_pool"
 )
 
@@ -18,6 +19,7 @@ type Scanner struct {
 	inQueue       *currentlyinqueue.InQueue
 	ticker        Ticker
 	logger        *slog.Logger
+	metrics       *metrics.ScannerMetrics
 }
 
 func NewScanner(
@@ -28,6 +30,8 @@ func NewScanner(
 	inQueue *currentlyinqueue.InQueue,
 	ticker Ticker,
 	logger *slog.Logger,
+	metrics *metrics.ScannerMetrics,
+
 ) *Scanner {
 	return &Scanner{
 		checkInterval: checkInterval,
@@ -37,6 +41,7 @@ func NewScanner(
 		inQueue:       inQueue,
 		ticker:        ticker,
 		logger:        logger,
+		metrics:       metrics,
 	}
 }
 
@@ -80,14 +85,17 @@ func (s *Scanner) tick(ctx context.Context) {
 
 func (s *Scanner) enqueue(ctx context.Context, st trip.StaleTrip) {
 	if !s.inQueue.TryAdd(st.Id) {
+		s.metrics.RecordCheck(ctx, "duplicate")
 		return
 	}
 
 	if !s.workerPool.Submit(st) {
 		s.inQueue.Remove(st.Id)
+		s.metrics.RecordCheck(ctx, "dropped")
 		s.logger.WarnContext(ctx, "queue full, task dropped",
 			slog.String("id", st.Id.String()),
 		)
 		return
 	}
+	s.metrics.RecordCheck(ctx, "queued")
 }
