@@ -15,6 +15,7 @@ import (
 
 	"github.com/adeladnagulov/TripGo/api"
 	"github.com/adeladnagulov/TripGo/internal/config"
+	"github.com/adeladnagulov/TripGo/internal/gateway/push"
 	server "github.com/adeladnagulov/TripGo/internal/http"
 	"github.com/adeladnagulov/TripGo/internal/http/health"
 	"github.com/adeladnagulov/TripGo/internal/http/helper/response"
@@ -33,6 +34,10 @@ import (
 	getUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get"
 	getPositionsUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/get_positions"
 	savePositionUsecase "github.com/adeladnagulov/TripGo/internal/usecase/trip/save_position"
+	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
+	"github.com/adeladnagulov/TripGo/internal/worker/positions/scanner"
+	"github.com/adeladnagulov/TripGo/internal/worker/positions/ticker"
+	workerpool "github.com/adeladnagulov/TripGo/internal/worker/positions/worker_pool"
 )
 
 type Container struct {
@@ -40,6 +45,8 @@ type Container struct {
 	cfg    *config.Config
 	db     *postgres.DB
 	tracer *telemetry.OTelProviders
+	wp     *workerpool.WorkerPool
+	scan   *scanner.Scanner
 }
 
 func New(cfg *config.Config) (*Container, error) {
@@ -61,10 +68,16 @@ func New(cfg *config.Config) (*Container, error) {
 	tripRepo := trip.NewTripRepository(db.Pool, cfg.DatabaseQueryTimeout)
 	tm := txManager.NewTransactionManager(db.Pool, cfg.DatabaseQueryTimeout)
 
+	inQueue := currentlyinqueue.NewInQueue()
+	gateWay := push.NewGateway(cfg.PushHTTPURL, cfg.PushRequestTimeout)
+	wp := workerpool.NewWorkerPool(cfg.PositionQueueSize, inQueue, gateWay, cfg.PushRequestTimeout, cfg.PositionWorkers, logger)
+	tick := ticker.NewRealTicker(cfg.PositionCheckInterval)
+	scan := scanner.NewScanner(cfg.PositionCheckInterval, cfg.PositionStaleAfter, tripRepo, wp, inQueue, tick, logger)
+
 	createUc := createUsecase.NewCreateUseCase(tripRepo, tm, logger, meter)
 	finishUc := finishUsecase.NewFinishUseCase(tripRepo, tm, logger, meter)
 	getUc := getUsecase.NewGetUseCase(tripRepo, logger)
-	savePosUc := savePositionUsecase.NewSavePositionUseCase(tripRepo, tm, logger)
+	savePosUc := savePositionUsecase.NewSavePositionUseCase(tripRepo, tm, logger, inQueue)
 	getPossUc := getPositionsUsecase.NewGetUseCase(tripRepo, logger)
 
 	createH := create.NewHandler(createUc)
@@ -115,11 +128,10 @@ func New(cfg *config.Config) (*Container, error) {
 		WriteTimeout:      cfg.HttpWriteTimeout,
 		IdleTimeout:       cfg.HttpIdleTimeout,
 	}
-	return &Container{srv: srv, cfg: cfg, db: db, tracer: provider}, nil
+	return &Container{srv: srv, cfg: cfg, db: db, tracer: provider, wp: wp, scan: scan}, nil
 }
 
 func (c *Container) Run() {
-	defer c.db.Close()
 	srvErrCh := make(chan error, 1)
 	go func() {
 		log.Printf("Starting server on %s", c.srv.Addr)
@@ -127,6 +139,11 @@ func (c *Container) Run() {
 			srvErrCh <- err
 		}
 	}()
+
+	bgCtx, bgCancel := context.WithCancel(context.Background())
+
+	c.wp.Start(bgCtx)
+	go c.scan.Run(bgCtx)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -137,18 +154,21 @@ func (c *Container) Run() {
 	case err := <-srvErrCh:
 		if !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("server failed to start or crashed: %v", err)
+			bgCancel()
 		}
 	}
 
-	shotdownCtx, cancel := context.WithTimeout(context.Background(), c.cfg.ShutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), c.cfg.ShutdownTimeout)
 	defer cancel()
 
-	if c.tracer != nil {
-		defer c.tracer.Shutdown(shotdownCtx)
-	}
-
-	if err := c.srv.Shutdown(shotdownCtx); err != nil {
+	if err := c.srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
 	}
+	bgCancel()
+	c.wp.Stop()
+	if c.tracer != nil {
+		defer c.tracer.Shutdown(shutdownCtx)
+	}
+	c.db.Close()
 	log.Println("Server exited gracefully")
 }

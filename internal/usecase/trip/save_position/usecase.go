@@ -8,20 +8,28 @@ import (
 
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/helper/decode"
+	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
 	"github.com/google/uuid"
 )
 
 type SavePositionUseCase struct {
-	repo   positionSaver
-	tm     txManager
-	logger *slog.Logger
+	repo    positionSaver
+	tm      txManager
+	logger  *slog.Logger
+	inQueue *currentlyinqueue.InQueue
 }
 
-func NewSavePositionUseCase(repo positionSaver, tm txManager, logger *slog.Logger) *SavePositionUseCase {
+func NewSavePositionUseCase(
+	repo positionSaver,
+	tm txManager,
+	logger *slog.Logger,
+	inQueue *currentlyinqueue.InQueue,
+) *SavePositionUseCase {
 	return &SavePositionUseCase{
-		repo:   repo,
-		tm:     tm,
-		logger: logger,
+		repo:    repo,
+		tm:      tm,
+		logger:  logger,
+		inQueue: inQueue,
 	}
 }
 
@@ -47,6 +55,12 @@ func (s *SavePositionUseCase) SavePosition(ctx context.Context, tripId uuid.UUID
 		)
 		return nil, fmt.Errorf("save position error: %w", err)
 	}
+
+	s.inQueue.Remove(tripId)
+	s.logger.DebugContext(ctx, "position received, cancelled push request",
+		slog.String("trip_id", tripId.String()),
+	)
+
 	s.logger.InfoContext(ctx, "save position successfully",
 		"id", pos.Id,
 		"trip_id", pos.TripId,

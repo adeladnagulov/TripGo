@@ -410,8 +410,7 @@ func (r *Repository) GetStaleTrips(ctx context.Context, staleAfter time.Duration
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
-	staleBuilder := sq.Select(
-		"id", "driver_id").
+	staleBuilder := sq.Select("id", "driver_id").
 		From("trips").
 		Where(sq.Eq{"status": trip.Active}).
 		Where(sq.Expr(
@@ -425,7 +424,7 @@ func (r *Repository) GetStaleTrips(ctx context.Context, staleAfter time.Duration
 	if err != nil {
 		return nil, fmt.Errorf("builde stale trips query: %w", err)
 	}
-	rows, err := dbExc.Query(queryCtx, query, args)
+	rows, err := dbExc.Query(queryCtx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed execute get stale trips query: %w", err)
 	}
@@ -433,7 +432,7 @@ func (r *Repository) GetStaleTrips(ctx context.Context, staleAfter time.Duration
 	var staleTrips []trip.StaleTrip
 	for rows.Next() {
 		var staleTrip trip.StaleTrip
-		err = rows.Scan(&staleTrip)
+		err = rows.Scan(&staleTrip.Id, &staleTrip.DriverId)
 		if err != nil {
 			return nil, fmt.Errorf("scan stale trip error: %w", err)
 		}
