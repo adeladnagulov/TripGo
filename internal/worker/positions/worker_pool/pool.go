@@ -124,7 +124,6 @@ func (wp *WorkerPool) processTrip(ctx context.Context, st trip.StaleTrip, worker
 			slog.String("id", st.Id.String()),
 			slog.Int("worker_id", workerId),
 		)
-		return
 	} else {
 		wp.logger.InfoContext(ctx, "push request sent",
 			slog.String("id", st.Id.String()),
@@ -133,7 +132,7 @@ func (wp *WorkerPool) processTrip(ctx context.Context, st trip.StaleTrip, worker
 	}
 
 	wp.metrics.RecordRequest(ctx, result)
-	wp.metrics.RecordDuration(ctx, duration)
+	wp.metrics.RecordDuration(ctx, duration, result)
 }
 
 func (wp *WorkerPool) GetActiveWorkers() int64 {

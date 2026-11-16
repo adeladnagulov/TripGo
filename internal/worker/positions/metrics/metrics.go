@@ -88,6 +88,6 @@ func (m *PoolMetrics) RecordRequest(ctx context.Context, result string) {
 	m.requests.Add(ctx, 1, metric.WithAttributes(attribute.String("result", result)))
 }
 
-func (m *PoolMetrics) RecordDuration(ctx context.Context, duration time.Duration) {
-	m.duration.Record(ctx, duration.Seconds(), metric.WithAttributes(attribute.String("result", "success")))
+func (m *PoolMetrics) RecordDuration(ctx context.Context, duration time.Duration, result string) {
+	m.duration.Record(ctx, duration.Seconds(), metric.WithAttributes(attribute.String("result", result)))
 }
