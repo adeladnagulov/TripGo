@@ -11,7 +11,13 @@ import (
 
 	pushapi "github.com/adeladnagulov/TripGo/api/push"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var gatewayTracer = otel.Tracer("push_gateway")
 
 type Gateway struct {
 	client  *http.Client
@@ -28,6 +34,14 @@ func NewGateway(baseURl string, timeout time.Duration) *Gateway {
 }
 
 func (g *Gateway) ReuestPosition(ctx context.Context, tripId, driverId uuid.UUID) error {
+	ctx, span := gatewayTracer.Start(ctx, "push_gateway.request_position",
+		trace.WithAttributes(
+			attribute.String("trip.id", tripId.String()),
+			attribute.String("driver.id", driverId.String()),
+		),
+	)
+	defer span.End()
+
 	reqBody := pushapi.PushRequest{
 		RecipientId: driverId,
 		RequestId:   uuid.NewString(),
@@ -44,6 +58,8 @@ func (g *Gateway) ReuestPosition(ctx context.Context, tripId, driverId uuid.UUID
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, g.baseURL+"/api/v1/push", bytes.NewReader(bodyBytes))
 	if err != nil {
+		span.SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("create http request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")

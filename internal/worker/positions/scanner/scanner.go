@@ -9,7 +9,11 @@ import (
 	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
 	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 	workerpool "github.com/adeladnagulov/TripGo/internal/worker/positions/worker_pool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var scannerTracer = otel.Tracer("scanner")
 
 type Scanner struct {
 	checkInterval time.Duration
@@ -84,11 +88,16 @@ func (s *Scanner) tick(ctx context.Context) {
 }
 
 func (s *Scanner) enqueue(ctx context.Context, st trip.StaleTrip) {
+	ctx, span := scannerTracer.Start(ctx, "scanner.enqueue")
+	span.SetAttributes(attribute.String("trip.id", st.Id.String()))
+	defer span.End()
+
 	if !s.inQueue.TryAdd(st.Id) {
 		s.metrics.RecordCheck(ctx, "duplicate")
 		return
 	}
 
+	st.ScannerSpan = span.SpanContext()
 	if !s.workerPool.Submit(st) {
 		s.inQueue.Remove(st.Id)
 		s.metrics.RecordCheck(ctx, "dropped")

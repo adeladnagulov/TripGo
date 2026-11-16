@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Status string
@@ -65,6 +66,7 @@ type TripPositionsResponse struct {
 }
 
 type StaleTrip struct {
-	Id       uuid.UUID
-	DriverId uuid.UUID
+	Id          uuid.UUID
+	DriverId    uuid.UUID
+	ScannerSpan trace.SpanContext
 }

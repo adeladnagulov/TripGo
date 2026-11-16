@@ -11,7 +11,12 @@ import (
 	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
 	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var workerTracer = otel.Tracer("worker_pool")
 
 type Gateway interface {
 	ReuestPosition(ctx context.Context, tripId, driverId uuid.UUID) error
@@ -94,7 +99,15 @@ func (wp *WorkerPool) processTrip(ctx context.Context, st trip.StaleTrip, worker
 	wp.activeWorkers.Add(1)
 	defer wp.activeWorkers.Add(-1)
 
-	pushCtx, cancel := context.WithTimeout(ctx, wp.pushTimeout)
+	spanCtx, span := workerTracer.Start(ctx, "worker.process_trip",
+		trace.WithLinks(trace.Link{
+			SpanContext: st.ScannerSpan,
+		}),
+	)
+	span.SetAttributes(attribute.String("trip.id", st.Id.String()))
+	defer span.End()
+
+	pushCtx, cancel := context.WithTimeout(spanCtx, wp.pushTimeout)
 	defer cancel()
 
 	start := time.Now()
