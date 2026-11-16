@@ -5,12 +5,13 @@ import (
 	"log/slog"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
 	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 	workerpool "github.com/adeladnagulov/TripGo/internal/worker/positions/worker_pool"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 var scannerTracer = otel.Tracer("scanner")
@@ -35,7 +36,6 @@ func NewScanner(
 	ticker Ticker,
 	logger *slog.Logger,
 	metrics *metrics.ScannerMetrics,
-
 ) *Scanner {
 	return &Scanner{
 		checkInterval: checkInterval,
@@ -97,8 +97,11 @@ func (s *Scanner) enqueue(ctx context.Context, st trip.StaleTrip) {
 		return
 	}
 
-	st.ScannerSpan = span.SpanContext()
-	if !s.workerPool.Submit(st) {
+	task := workerpool.Task{
+		Trip:        st,
+		ScannerSpan: span.SpanContext(),
+	}
+	if !s.workerPool.Submit(task) {
 		s.inQueue.Remove(st.Id)
 		s.metrics.RecordCheck(ctx, "dropped")
 		s.logger.WarnContext(ctx, "queue full, task dropped",

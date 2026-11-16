@@ -9,12 +9,13 @@ import (
 	"net/http"
 	"time"
 
-	pushapi "github.com/adeladnagulov/TripGo/api/push"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+
+	pushapi "github.com/adeladnagulov/TripGo/api/push"
 )
 
 var gatewayTracer = otel.Tracer("push_gateway")

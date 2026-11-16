@@ -141,7 +141,7 @@
 				
 				<option value="file42">github.com/adeladnagulov/TripGo/internal/worker/positions/mocks/ticker_mock.go (0.0%)</option>
 				
-				<option value="file43">github.com/adeladnagulov/TripGo/internal/worker/positions/scanner/scanner.go (82.9%)</option>
+				<option value="file43">github.com/adeladnagulov/TripGo/internal/worker/positions/scanner/scanner.go (83.8%)</option>
 				
 				<option value="file44">github.com/adeladnagulov/TripGo/internal/worker/positions/ticker/ticker.go (0.0%)</option>
 				
@@ -1078,7 +1078,6 @@ import (
         "time"
 
         "github.com/google/uuid"
-        "go.opentelemetry.io/otel/trace"
 )
 
 type Status string
@@ -1140,9 +1139,8 @@ type TripPositionsResponse struct {
 }
 
 type StaleTrip struct {
-        Id          uuid.UUID
-        DriverId    uuid.UUID
-        ScannerSpan trace.SpanContext
+        Id       uuid.UUID
+        DriverId uuid.UUID
 }
 </pre>
 		
@@ -1157,12 +1155,13 @@ import (
         "net/http"
         "time"
 
-        pushapi "github.com/adeladnagulov/TripGo/api/push"
         "github.com/google/uuid"
         "go.opentelemetry.io/otel"
         "go.opentelemetry.io/otel/attribute"
         "go.opentelemetry.io/otel/codes"
         "go.opentelemetry.io/otel/trace"
+
+        pushapi "github.com/adeladnagulov/TripGo/api/push"
 )
 
 var gatewayTracer = otel.Tracer("push_gateway")
@@ -2653,8 +2652,7 @@ func (r *Repository) SavePosition(ctx context.Context, pos trip.TripPosition) (i
         defer cancel()
 </span>
         <span class="cov0" title="0">dbExc := getDbExecutor(queryCtx, r.pool)
-</span>        //span := trace.SpanFromContext(queryCtx)
-        <span class="cov0" title="0">tripBuilder := sq.Select("status").
+        tripBuilder := sq.Select("status").
                 From("trips").
                 Where(sq.Eq{"id": pos.TripId}).
                 PlaceholderFormat(sq.Dollar)
@@ -2713,9 +2711,9 @@ func (r *Repository) GetPositions(ctx context.Context, tripId uuid.UUID) ([]trip
         defer cancel()
 </span>
         <span class="cov0" title="0">dbExc := getDbExecutor(queryCtx, r.pool)
-</span>        //span := trace.SpanFromContext(queryCtx)
-        <span class="cov0" title="0">positionsBuilder := sq.Select(
-                "id, trip_id, latitude, longitude, recorded_at").
+        positionsBuilder := sq.Select(
+                "id, trip_id, latitude, longitude, recorded_at",
+        ).
                 From("trip_positions").
                 Where(sq.Eq{"trip_id": tripId}).
                 OrderBy("recorded_at", "id").
@@ -2982,10 +2980,12 @@ func (s *GetUseCase) GetTrip(ctx context.Context, id uuid.UUID) (*trip.Trip, err
 
 import (
         "context"
+        "fmt"
         "log/slog"
 
-        "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/google/uuid"
+
+        "github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type GetPosUseCase struct {
@@ -3007,6 +3007,7 @@ func (s *GetPosUseCase) GetPositions(ctx context.Context, tripId uuid.UUID) (*tr
                         slog.String("error", err.Error()),
                         "tripId", tripId,
                 )
+                return nil, fmt.Errorf("get position trip_id=%v error: %w", tripId, err)
 </span>        }
         <span class="cov0" title="0">resp := trip.TripPositionsResponse{
                 Positions: positions,
@@ -3027,11 +3028,12 @@ import (
         "log/slog"
         "time"
 
+        "github.com/google/uuid"
+        "go.opentelemetry.io/otel/metric"
+
         "github.com/adeladnagulov/TripGo/internal/domain/trip"
         "github.com/adeladnagulov/TripGo/internal/http/helper/decode"
         currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
-        "github.com/google/uuid"
-        "go.opentelemetry.io/otel/metric"
 )
 
 type SavePositionUseCase struct {
@@ -3442,12 +3444,13 @@ import (
         "log/slog"
         "time"
 
+        "go.opentelemetry.io/otel"
+        "go.opentelemetry.io/otel/attribute"
+
         "github.com/adeladnagulov/TripGo/internal/domain/trip"
         currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
         "github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
         workerpool "github.com/adeladnagulov/TripGo/internal/worker/positions/worker_pool"
-        "go.opentelemetry.io/otel"
-        "go.opentelemetry.io/otel/attribute"
 )
 
 var scannerTracer = otel.Tracer("scanner")
@@ -3472,7 +3475,6 @@ func NewScanner(
         ticker Ticker,
         logger *slog.Logger,
         metrics *metrics.ScannerMetrics,
-
 ) *Scanner {
         <span class="cov8" title="1">return &amp;Scanner{
                 checkInterval: checkInterval,
@@ -3534,8 +3536,11 @@ func (s *Scanner) enqueue(ctx context.Context, st trip.StaleTrip) {
                 return
 </span>        }
 
-        <span class="cov8" title="1">st.ScannerSpan = span.SpanContext()
-        if !s.workerPool.Submit(st) </span>{
+        <span class="cov8" title="1">task := workerpool.Task{
+                Trip:        st,
+                ScannerSpan: span.SpanContext(),
+</span>        }
+        <span class="cov8" title="1">if !s.workerPool.Submit(task) </span>{
                 <span class="cov0" title="0">s.inQueue.Remove(st.Id)
                 s.metrics.RecordCheck(ctx, "dropped")
                 s.logger.WarnContext(ctx, "queue full, task dropped",
@@ -3577,18 +3582,19 @@ import (
         "sync/atomic"
         "time"
 
-        "github.com/adeladnagulov/TripGo/internal/domain/trip"
-        currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
-        "github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
         "go.opentelemetry.io/otel"
         "go.opentelemetry.io/otel/attribute"
         "go.opentelemetry.io/otel/trace"
+
+        "github.com/adeladnagulov/TripGo/internal/domain/trip"
+        currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
+        "github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 )
 
 var workerTracer = otel.Tracer("worker_pool")
 
 type WorkerPool struct {
-        queue       chan trip.StaleTrip
+        queue       chan Task
         inQueue     *currentlyinqueue.InQueue
         pushGateway Gateway
         pushTimeout time.Duration
@@ -3598,6 +3604,11 @@ type WorkerPool struct {
         metrics       *metrics.PoolMetrics
         activeWorkers atomic.Int64
         wg            sync.WaitGroup
+}
+
+type Task struct {
+        Trip        trip.StaleTrip
+        ScannerSpan trace.SpanContext
 }
 
 func NewWorkerPool(
@@ -3610,7 +3621,7 @@ func NewWorkerPool(
         poolMetrics *metrics.PoolMetrics,
 ) *WorkerPool {
         <span class="cov8" title="1">return &amp;WorkerPool{
-                queue:       make(chan trip.StaleTrip, queueSize),
+                queue:       make(chan Task, queueSize),
                 inQueue:     inQueue,
                 pushGateway: pushGateway,
                 pushTimeout: pushTimeout,
@@ -3620,9 +3631,9 @@ func NewWorkerPool(
 </span>        }
 }
 
-func (wp *WorkerPool) Submit(st trip.StaleTrip) bool {
+func (wp *WorkerPool) Submit(task Task) bool {
         <span class="cov8" title="1">select </span>{
-        case wp.queue &lt;- st:
+        case wp.queue &lt;- task:
                 <span class="cov8" title="1">return true</span>
         default:
                 <span class="cov8" title="1">return false</span>
@@ -3646,16 +3657,16 @@ func (wp *WorkerPool) worker(ctx context.Context, id int) {
         wp.logger.DebugContext(ctx, "worker started", slog.Int("worker_id", id))
         defer wp.logger.DebugContext(ctx, "worker stopped", slog.Int("worker_id", id))
 </span>
-        <span class="cov8" title="1">for st := range wp.queue </span>{
-                <span class="cov8" title="1">wp.processTrip(ctx, st, id)
+        <span class="cov8" title="1">for task := range wp.queue </span>{
+                <span class="cov8" title="1">wp.processTrip(ctx, task, id)
 </span>        }
 }
 
-func (wp *WorkerPool) processTrip(ctx context.Context, st trip.StaleTrip, workerId int) {
-        <span class="cov8" title="1">if !wp.inQueue.Contains(st.Id) </span>{
+func (wp *WorkerPool) processTrip(ctx context.Context, task Task, workerId int) {
+        <span class="cov8" title="1">if !wp.inQueue.Contains(task.Trip.Id) </span>{
                 <span class="cov8" title="1">wp.metrics.RecordRequest(ctx, "cancelled")
                 wp.logger.DebugContext(ctx, "task cancelled, skipping",
-                        slog.String("id", st.Id.String()),
+                        slog.String("id", task.Trip.Id.String()),
                         slog.Int("worker_id", workerId),
                 )
                 return
@@ -3666,32 +3677,32 @@ func (wp *WorkerPool) processTrip(ctx context.Context, st trip.StaleTrip, worker
 </span>
         <span class="cov8" title="1">spanCtx, span := workerTracer.Start(ctx, "worker.process_trip",
                 trace.WithLinks(trace.Link{
-                        SpanContext: st.ScannerSpan,
+                        SpanContext: task.ScannerSpan,
                 }),
         )
-        span.SetAttributes(attribute.String("trip.id", st.Id.String()))
+        span.SetAttributes(attribute.String("trip.id", task.Trip.Id.String()))
         defer span.End()
 </span>
         <span class="cov8" title="1">pushCtx, cancel := context.WithTimeout(spanCtx, wp.pushTimeout)
         defer cancel()
 </span>
         <span class="cov8" title="1">start := time.Now()
-        err := wp.pushGateway.ReuestPosition(pushCtx, st.Id, st.DriverId)
+        err := wp.pushGateway.ReuestPosition(pushCtx, task.Trip.Id, task.Trip.DriverId)
         duration := time.Since(start)
 </span>
-        <span class="cov8" title="1">wp.inQueue.Remove(st.Id)
+        <span class="cov8" title="1">wp.inQueue.Remove(task.Trip.Id)
 </span>
         <span class="cov8" title="1">result := "success"
         if err != nil </span>{
                 <span class="cov8" title="1">result = "error"
                 wp.logger.WarnContext(ctx, "push request failed",
                         slog.String("error", err.Error()),
-                        slog.String("id", st.Id.String()),
+                        slog.String("id", task.Trip.Id.String()),
                         slog.Int("worker_id", workerId),
                 )
 </span>        } else {
                 <span class="cov8" title="1">wp.logger.InfoContext(ctx, "push request sent",
-                        slog.String("id", st.Id.String()),
+                        slog.String("id", task.Trip.Id.String()),
                         slog.Int("worker_id", workerId),
                 )
 </span>        }

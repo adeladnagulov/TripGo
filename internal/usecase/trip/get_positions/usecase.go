@@ -2,10 +2,12 @@ package getpositions
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type GetPosUseCase struct {
@@ -27,6 +29,7 @@ func (s *GetPosUseCase) GetPositions(ctx context.Context, tripId uuid.UUID) (*tr
 			slog.String("error", err.Error()),
 			"tripId", tripId,
 		)
+		return nil, fmt.Errorf("get position trip_id=%v error: %w", tripId, err)
 	}
 	resp := trip.TripPositionsResponse{
 		Positions: positions,

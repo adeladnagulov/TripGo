@@ -7,18 +7,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
-	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
-	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
+	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
+	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
 )
 
 var workerTracer = otel.Tracer("worker_pool")
 
 type WorkerPool struct {
-	queue       chan trip.StaleTrip
+	queue       chan Task
 	inQueue     *currentlyinqueue.InQueue
 	pushGateway Gateway
 	pushTimeout time.Duration
@@ -28,6 +29,11 @@ type WorkerPool struct {
 	metrics       *metrics.PoolMetrics
 	activeWorkers atomic.Int64
 	wg            sync.WaitGroup
+}
+
+type Task struct {
+	Trip        trip.StaleTrip
+	ScannerSpan trace.SpanContext
 }
 
 func NewWorkerPool(
@@ -40,7 +46,7 @@ func NewWorkerPool(
 	poolMetrics *metrics.PoolMetrics,
 ) *WorkerPool {
 	return &WorkerPool{
-		queue:       make(chan trip.StaleTrip, queueSize),
+		queue:       make(chan Task, queueSize),
 		inQueue:     inQueue,
 		pushGateway: pushGateway,
 		pushTimeout: pushTimeout,
@@ -50,9 +56,9 @@ func NewWorkerPool(
 	}
 }
 
-func (wp *WorkerPool) Submit(st trip.StaleTrip) bool {
+func (wp *WorkerPool) Submit(task Task) bool {
 	select {
-	case wp.queue <- st:
+	case wp.queue <- task:
 		return true
 	default:
 		return false
@@ -76,16 +82,16 @@ func (wp *WorkerPool) worker(ctx context.Context, id int) {
 	wp.logger.DebugContext(ctx, "worker started", slog.Int("worker_id", id))
 	defer wp.logger.DebugContext(ctx, "worker stopped", slog.Int("worker_id", id))
 
-	for st := range wp.queue {
-		wp.processTrip(ctx, st, id)
+	for task := range wp.queue {
+		wp.processTrip(ctx, task, id)
 	}
 }
 
-func (wp *WorkerPool) processTrip(ctx context.Context, st trip.StaleTrip, workerId int) {
-	if !wp.inQueue.Contains(st.Id) {
+func (wp *WorkerPool) processTrip(ctx context.Context, task Task, workerId int) {
+	if !wp.inQueue.Contains(task.Trip.Id) {
 		wp.metrics.RecordRequest(ctx, "cancelled")
 		wp.logger.DebugContext(ctx, "task cancelled, skipping",
-			slog.String("id", st.Id.String()),
+			slog.String("id", task.Trip.Id.String()),
 			slog.Int("worker_id", workerId),
 		)
 		return
@@ -96,32 +102,32 @@ func (wp *WorkerPool) processTrip(ctx context.Context, st trip.StaleTrip, worker
 
 	spanCtx, span := workerTracer.Start(ctx, "worker.process_trip",
 		trace.WithLinks(trace.Link{
-			SpanContext: st.ScannerSpan,
+			SpanContext: task.ScannerSpan,
 		}),
 	)
-	span.SetAttributes(attribute.String("trip.id", st.Id.String()))
+	span.SetAttributes(attribute.String("trip.id", task.Trip.Id.String()))
 	defer span.End()
 
 	pushCtx, cancel := context.WithTimeout(spanCtx, wp.pushTimeout)
 	defer cancel()
 
 	start := time.Now()
-	err := wp.pushGateway.ReuestPosition(pushCtx, st.Id, st.DriverId)
+	err := wp.pushGateway.ReuestPosition(pushCtx, task.Trip.Id, task.Trip.DriverId)
 	duration := time.Since(start)
 
-	wp.inQueue.Remove(st.Id)
+	wp.inQueue.Remove(task.Trip.Id)
 
 	result := "success"
 	if err != nil {
 		result = "error"
 		wp.logger.WarnContext(ctx, "push request failed",
 			slog.String("error", err.Error()),
-			slog.String("id", st.Id.String()),
+			slog.String("id", task.Trip.Id.String()),
 			slog.Int("worker_id", workerId),
 		)
 	} else {
 		wp.logger.InfoContext(ctx, "push request sent",
-			slog.String("id", st.Id.String()),
+			slog.String("id", task.Trip.Id.String()),
 			slog.Int("worker_id", workerId),
 		)
 	}

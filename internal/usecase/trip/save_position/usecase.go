@@ -6,11 +6,12 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/metric"
+
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/adeladnagulov/TripGo/internal/http/helper/decode"
 	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type SavePositionUseCase struct {

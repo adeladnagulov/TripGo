@@ -314,7 +314,6 @@ func (r *Repository) SavePosition(ctx context.Context, pos trip.TripPosition) (i
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
-	//span := trace.SpanFromContext(queryCtx)
 	tripBuilder := sq.Select("status").
 		From("trips").
 		Where(sq.Eq{"id": pos.TripId}).
@@ -374,9 +373,9 @@ func (r *Repository) GetPositions(ctx context.Context, tripId uuid.UUID) ([]trip
 	defer cancel()
 
 	dbExc := getDbExecutor(queryCtx, r.pool)
-	//span := trace.SpanFromContext(queryCtx)
 	positionsBuilder := sq.Select(
-		"id, trip_id, latitude, longitude, recorded_at").
+		"id, trip_id, latitude, longitude, recorded_at",
+	).
 		From("trip_positions").
 		Where(sq.Eq{"trip_id": tripId}).
 		OrderBy("recorded_at", "id").

@@ -3,8 +3,9 @@ package getpositions
 import (
 	"context"
 
-	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	"github.com/google/uuid"
+
+	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 )
 
 type tripUseCase interface {

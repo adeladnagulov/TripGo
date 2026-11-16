@@ -46,8 +46,8 @@ func TestWorkerPool_Scenarios(t *testing.T) {
 	t.Run("Queue overflow gives dropped, no blocking", func(t *testing.T) {
 		pool := workerpool.NewWorkerPool(1, inQueue, mockGateway, time.Second, 0, logger, poolMetrics)
 
-		task1 := domain.StaleTrip{Id: uuid.New(), DriverId: uuid.New()}
-		task2 := domain.StaleTrip{Id: uuid.New(), DriverId: uuid.New()}
+		task1 := workerpool.Task{Trip: domain.StaleTrip{Id: uuid.New(), DriverId: uuid.New()}}
+		task2 := workerpool.Task{Trip: domain.StaleTrip{Id: uuid.New(), DriverId: uuid.New()}}
 
 		assert.True(t, pool.Submit(task1))
 		assert.False(t, pool.Submit(task2))
@@ -65,7 +65,7 @@ func TestWorkerPool_Scenarios(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		pool.Start(ctx)
 
-		pool.Submit(domain.StaleTrip{Id: tripID, DriverId: uuid.New()})
+		pool.Submit(workerpool.Task{Trip: domain.StaleTrip{Id: tripID, DriverId: uuid.New()}})
 
 		assert.Eventually(t, func() bool {
 			return true
@@ -97,8 +97,8 @@ func TestWorkerPool_Scenarios(t *testing.T) {
 		inQueue.TryAdd(trip1.Id)
 		inQueue.TryAdd(trip2.Id)
 
-		pool.Submit(trip1)
-		pool.Submit(trip2)
+		pool.Submit(workerpool.Task{Trip: trip1})
+		pool.Submit(workerpool.Task{Trip: trip2})
 
 		assert.Eventually(t, func() bool {
 			return callCount.Load() == 2
