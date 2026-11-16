@@ -10,17 +10,12 @@ import (
 	"github.com/adeladnagulov/TripGo/internal/domain/trip"
 	currentlyinqueue "github.com/adeladnagulov/TripGo/internal/worker/positions/currently_in_queue"
 	"github.com/adeladnagulov/TripGo/internal/worker/positions/metrics"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 var workerTracer = otel.Tracer("worker_pool")
-
-type Gateway interface {
-	ReuestPosition(ctx context.Context, tripId, driverId uuid.UUID) error
-}
 
 type WorkerPool struct {
 	queue       chan trip.StaleTrip

@@ -14,6 +14,8 @@ require (
 	github.com/exaring/otelpgx v0.13.0
 	github.com/getkin/kin-openapi v0.152.0
 	github.com/go-chi/chi/v5 v5.3.2
+	github.com/go-openapi/testify/v2 v2.6.0
+	github.com/golang/mock v1.1.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/oapi-codegen/runtime v1.7.0
@@ -26,6 +28,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.6.0
 )
 
