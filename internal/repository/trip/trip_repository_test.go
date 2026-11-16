@@ -154,4 +154,66 @@ func TestRepository_Integration(t *testing.T) {
 		assert.Nil(t, got)
 		assert.ErrorIs(t, err, domain.ErrNotFound)
 	})
+
+	t.Run("GetStaleTrips filters correctly", func(t *testing.T) {
+		_, err := db.Pool.Exec(ctx, "DELETE FROM trip_positions")
+		require.NoError(t, err, "failed to clean trip_positions")
+
+		_, err = db.Pool.Exec(ctx, "DELETE FROM trips")
+		require.NoError(t, err, "failed to clean trips")
+
+		f := time.Now().Add(-1 * time.Hour)
+		trip1 := &domain.Trip{
+			Id:         uuid.New(),
+			DriverId:   uuid.New(),
+			UserId:     uuid.New(),
+			StartPoint: domain.Coordinates{Lat: 12.12, Lon: 12.12},
+			EndPoint:   domain.Coordinates{Lat: 13.13, Lon: 13.13},
+			StartedAt:  time.Now().Add(-2 * time.Hour),
+			FinishedAt: &f,
+			Price:      100,
+			Status:     domain.Completed,
+		}
+		require.NoError(t, repo.Create(ctx, trip1))
+
+		trip2 := &domain.Trip{
+			Id:         uuid.New(),
+			DriverId:   uuid.New(),
+			UserId:     uuid.New(),
+			StartPoint: domain.Coordinates{Lat: 12.12, Lon: 12.12},
+			EndPoint:   domain.Coordinates{Lat: 13.13, Lon: 13.13},
+			StartedAt:  time.Now(),
+			Price:      100,
+			Status:     domain.Active,
+		}
+		require.NoError(t, repo.Create(ctx, trip2))
+
+		_, err = repo.SavePosition(ctx, domain.TripPosition{TripId: trip2.Id, Coordinates: domain.Coordinates{Lat: 14.12, Lon: 14.12}, RecordedAt: time.Now()})
+		require.NoError(t, err)
+
+		// должна попасть
+		trip3 := &domain.Trip{
+			Id:         uuid.New(),
+			DriverId:   uuid.New(),
+			UserId:     uuid.New(),
+			StartPoint: domain.Coordinates{Lat: 12.12, Lon: 12.12},
+			EndPoint:   domain.Coordinates{Lat: 13.13, Lon: 13.13},
+			StartedAt:  time.Now().Add(-2 * time.Hour),
+			Price:      100,
+			Status:     domain.Active,
+		}
+		require.NoError(t, repo.Create(ctx, trip3))
+
+		staleTrips, err := repo.GetStaleTrips(ctx, 60*time.Second)
+		require.NoError(t, err)
+
+		require.Len(t, staleTrips, 1)
+		assert.Equal(t, trip3.Id, staleTrips[0].Id)
+		assert.Equal(t, trip3.DriverId, staleTrips[0].DriverId)
+
+		t.Cleanup(func() {
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trip_positions WHERE trip_id IN ($1, $2, $3)", trip1.Id, trip2.Id, trip3.Id)
+			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id IN ($1, $2, $3)", trip1.Id, trip2.Id, trip3.Id)
+		})
+	})
 }

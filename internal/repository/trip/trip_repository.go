@@ -63,13 +63,13 @@ func (r *Repository) Create(ctx context.Context, t *trip.Trip) error {
 			"id", "user_id", "driver_id",
 			"start_latitude", "start_longitude", "end_latitude", "end_longitude",
 			"price", "status",
-			"started_at", "created_at", "updated_at",
+			"started_at", "finished_at", "created_at", "updated_at",
 		).
 		Values(
 			t.Id, t.UserId, t.DriverId,
 			t.StartPoint.Lat, t.StartPoint.Lon, t.EndPoint.Lat, t.EndPoint.Lon,
 			t.Price, t.Status,
-			t.StartedAt, time.Now(), time.Now(),
+			t.StartedAt, t.FinishedAt, time.Now(), time.Now(),
 		).
 		PlaceholderFormat(sq.Dollar)
 
