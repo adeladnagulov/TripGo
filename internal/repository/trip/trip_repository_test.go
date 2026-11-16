@@ -216,4 +216,48 @@ func TestRepository_Integration(t *testing.T) {
 			_, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id IN ($1, $2, $3)", trip1.Id, trip2.Id, trip3.Id)
 		})
 	})
+
+	t.Run("SavePosition updates last_position_at atomically and ignores older coords", func(t *testing.T) {
+		tripId := uuid.New()
+		t.Cleanup(func() { _, _ = db.Pool.Exec(ctx, "DELETE FROM trips WHERE id = $1", tripId) })
+
+		require.NoError(t, repo.Create(ctx, &domain.Trip{
+			Id:         tripId,
+			DriverId:   uuid.New(),
+			UserId:     uuid.New(),
+			StartPoint: domain.Coordinates{Lat: 12.12, Lon: 12.12},
+			EndPoint:   domain.Coordinates{Lat: 13.13, Lon: 13.13},
+			StartedAt:  time.Now(),
+			Price:      100,
+			Status:     domain.Active,
+		}))
+
+		t1 := time.Now().Add(-10 * time.Minute)
+		t2 := time.Now().Add(-5 * time.Minute)
+		t0 := time.Now().Add(-20 * time.Minute) // опоздавшая
+
+		err := tm.Do(ctx, func(ctx context.Context) error {
+			_, err := repo.SavePosition(ctx, domain.TripPosition{TripId: tripId, Coordinates: domain.Coordinates{Lat: 14.12, Lon: 14.12}, RecordedAt: t1})
+			return err
+		})
+		require.NoError(t, err)
+
+		err = tm.Do(ctx, func(ctx context.Context) error {
+			_, err := repo.SavePosition(ctx, domain.TripPosition{TripId: tripId, Coordinates: domain.Coordinates{Lat: 14.12, Lon: 14.12}, RecordedAt: t2})
+			return err
+		})
+		require.NoError(t, err)
+
+		err = tm.Do(ctx, func(ctx context.Context) error {
+			_, err := repo.SavePosition(ctx, domain.TripPosition{TripId: tripId, Coordinates: domain.Coordinates{Lat: 14.12, Lon: 14.12}, RecordedAt: t0})
+			return err
+		})
+		require.NoError(t, err)
+
+		var lastPositionAt time.Time
+		err = db.Pool.QueryRow(ctx, "SELECT last_position_at FROM trips WHERE id = $1", tripId).Scan(&lastPositionAt)
+		require.NoError(t, err)
+
+		assert.Equal(t, t2.Unix(), lastPositionAt.Unix())
+	})
 }
