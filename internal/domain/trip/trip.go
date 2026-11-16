@@ -31,6 +31,15 @@ type Trip struct {
 	Status         Status
 }
 
+func (t *Trip) Finish(at time.Time) error {
+	if t.Status != Active {
+		return ErrTripCompleted
+	}
+	t.Status = Completed
+	t.FinishedAt = &at
+	return nil
+}
+
 type TripData struct {
 	DriverId   uuid.UUID
 	EndPoint   Coordinates
@@ -39,11 +48,23 @@ type TripData struct {
 	UserId     uuid.UUID
 }
 
-func (t *Trip) Finish(at time.Time) error {
-	if t.Status != Active {
-		return ErrTripCompleted
-	}
-	t.Status = Completed
-	t.FinishedAt = &at
-	return nil
+type PositionData struct {
+	Coordinates Coordinates
+	RecordedAt  time.Time
+}
+
+type TripPosition struct {
+	Id          int64
+	TripId      uuid.UUID
+	Coordinates Coordinates
+	RecordedAt  time.Time
+}
+
+type TripPositionsResponse struct {
+	Positions []TripPosition
+}
+
+type StaleTrip struct {
+	Id       uuid.UUID
+	DriverId uuid.UUID
 }

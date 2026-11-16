@@ -24,6 +24,12 @@ DATABASE_MIN_CONNS
 DATABASE_MAX_CONN_LIFETIME
 DATABASE_CONNECT_TIMEOUT
 DATABASE_QUERY_TIMEOUT
+POSITION_CHECK_INTERVAL 
+POSITION_STALE_AFTER  
+POSITION_WORKERS   
+POSITION_QUEUE_SIZE  
+PUSH_HTTP_URL            
+PUSH_REQUEST_TIMEOUT
 
 ## Решения
 # Уровень изоляции 
@@ -61,3 +67,11 @@ internal/domain (ядро, сущности, ошибки) — ни от ког�
 Объявляются в пакете-потребителе, а реализуются во внешних слоях.
 Почему так:
 Потребитель сам диктует контракт, который ему нужен. Это позволяет не тянуть зависимости из внешних слоёв внутрь, легко менять реализации и писать изолированные unit-тесты с моками.
+
+# Опрос устаревших поездок
+Сканер → Очередь → Воркеры → Push Service
+
+Сканер раз в POSITION_CHECK_INTERVAL делает запрос GetStaleTrips к БД, получает список устаревших активных поездок и кладёт их в буферизированный канал-очередь размером POSITION_QUEUE_SIZE. POSITION_WORKERS горутин-воркеров читают из очереди и вызывают Push Service через HTTP. Перед постановкой в очередь поездка проверяется через InFlightTracker (map под sync.RWMutex) — если она уже там, задача не дублируется. При приходе координаты через POST /positions хендлер удаляет trip_id из InFlightTracker, и воркер пропускает отменённую задачу.
+
+# Что произойдёт при исчерпании очереди
+Постановка в очередь идёт через select с веткой default, поэтому сканер не блокируется. Если канал заполнен:

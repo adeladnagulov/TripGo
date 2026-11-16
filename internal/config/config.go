@@ -27,6 +27,12 @@ type Config struct {
 	OtelExporterProtocol     string        `env:"OTEL_EXPORTER_OTLP_PROTOCOL" envDefault:"http/protobuf"`
 	OtelResourceAttrs        string        `env:"OTEL_RESOURCE_ATTRIBUTES" envDefault:"service.namespace=tripgo,deployment.environment=local"`
 	OtelTracesSampler        string        `env:"OTEL_TRACES_SAMPLER" envDefault:"parentbased_always_on"`
+	PositionCheckInterval    time.Duration `env:"POSITION_CHECK_INTERVAL" envDefault:"30s"`
+	PositionStaleAfter       time.Duration `env:"POSITION_STALE_AFTER" envDefault:"60s"`
+	PositionWorkers          int           `env:"POSITION_WORKERS" envDefault:"4"`
+	PositionQueueSize        int           `env:"POSITION_QUEUE_SIZE" envDefault:"100"`
+	PushHTTPURL              string        `env:"PUSH_HTTP_URL" envDefault:"http://localhost:23809"`
+	PushRequestTimeout       time.Duration `env:"PUSH_REQUEST_TIMEOUT" envDefault:"1s"`
 }
 
 func NewConfig() (*Config, error) {

@@ -16,6 +16,11 @@ generate: ## Вся кодогенерация: OpenAPI, mocks, protobuf
 		-package api \
 		-o api/api.gen.go \
 		contracts/openapi/trip-service.openapi.yaml
+	$(GO) tool oapi-codegen \
+		-generate types \
+		-package pushapi \
+		-o api/push/api.gen.go \
+		contracts/openapi/push-service.openapi.yaml
 	$(GO) generate ./...
 
 build: ## Собрать исполняемый файл
